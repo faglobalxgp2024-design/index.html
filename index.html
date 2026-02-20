@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1, user-scalable=no" />
-  <title>Pixel Dodge</title>
+  <title>XGP 미니게임</title>
 
   <!-- 픽셀 느낌 폰트(구글 폰트) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -181,7 +181,77 @@
       width:28px;
       height:28px;
 
-      background-image: url("https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f4a3.svg");
+      /* 장애물(폭탄 캐릭터) - CSS로 직접 그림 (배경 대비 강함) */
+.hazard{
+  position:absolute;
+  width:30px;
+  height:30px;
+
+  /* 배경 이미지 제거 */
+  background: radial-gradient(circle at 30% 28%, #ffffffaa 0 12%, transparent 13%),
+              radial-gradient(circle at 35% 35%, #2b2f3a 0 55%, #0d0f14 56% 100%);
+  border-radius: 50%;
+
+  /* 밝은 외곽선 + 입체감 */
+  box-shadow:
+    0 0 0 2px rgba(255,255,255,.95),     /* 흰 테두리 */
+    0 0 0 5px rgba(0,0,0,.35),           /* 바깥 그림자 링 */
+    0 10px 18px rgba(0,0,0,.45);         /* 아래 그림자 */
+
+  filter: drop-shadow(0 0 10px rgba(255,120,60,.35));
+  animation: bombWiggle .55s ease-in-out infinite;
+}
+
+/* 폭탄 심지(위쪽) */
+.hazard::before{
+  content:"";
+  position:absolute;
+  width:14px;
+  height:10px;
+  left:18px;
+  top:-2px;
+
+  /* 심지 줄 */
+  background: linear-gradient(180deg, #d9b48f, #7a5a3a);
+  border-radius: 8px;
+  transform: rotate(-18deg);
+
+  box-shadow:
+    0 0 0 2px rgba(255,255,255,.85),
+    0 6px 10px rgba(0,0,0,.35);
+}
+
+/* 불꽃(깜빡임) */
+.hazard::after{
+  content:"";
+  position:absolute;
+  width:16px;
+  height:16px;
+  left:26px;
+  top:-10px;
+
+  background:
+    radial-gradient(circle at 40% 40%, #fff8c7 0 25%, transparent 26%),
+    radial-gradient(circle at 50% 60%, #ffd166 0 45%, transparent 46%),
+    radial-gradient(circle at 50% 70%, #ff6a3d 0 70%, transparent 71%);
+  border-radius: 50% 50% 50% 50%;
+  transform: rotate(10deg);
+
+  filter: drop-shadow(0 0 8px rgba(255,170,60,.9));
+  animation: fuseFlicker .18s ease-in-out infinite alternate;
+}
+
+/* 폭탄 흔들림 */
+@keyframes bombWiggle{
+  0%,100%{ transform: translateX(0) rotate(-2deg) scale(1); }
+  50%{ transform: translateX(1px) rotate(2deg) scale(1.03); }
+}
+
+/* 불꽃 깜빡임 */
+@keyframes fuseFlicker{
+  from{ transform: translateY(0) scale(0.95) rotate(10deg); opacity:.9; }
+  to{ transform: translateY(-1px) scale(1.1) rotate(2deg); opacity:1; }
+}
       background-size: contain;
       background-repeat: no-repeat;
       background-position: center;
