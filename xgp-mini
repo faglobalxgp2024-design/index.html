@@ -1,0 +1,644 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1, user-scalable=no" />
+  <title>Pixel Dodge</title>
+
+  <!-- 픽셀 느낌 폰트(구글 폰트) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg:#2b0d0d;
+      --panel:#3a1212;
+      --line:#ffb347;
+      --txt:#fff6e6;
+      --muted:#ffd9a6;
+      --accent:#ff9a3c;
+      --danger:#ff4d4d;
+      --warn:#ffd166;
+    }
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      background:
+      linear-gradient(
+        135deg,
+        #ffcf6e 0%,
+        #ff9a3c 30%,
+        #ff5e3a 60%,
+        #b31217 100%
+        ),
+        radial-gradient(circle at 20% 20%, rgba(255,255,255,0.15), transparent 40%);
+      color:var(--txt);
+      font-family:"Press Start 2P", system-ui, sans-serif;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:16px;
+      overflow:hidden;
+    }
+
+    /* 픽셀 반짝이 배경 (CSS 애니메이션) */
+    .stars{
+      position:fixed; inset:0;
+      pointer-events:none;
+      background-image:
+        radial-gradient(#ffffff55 1px, transparent 1px),
+        radial-gradient(#ffffff33 1px, transparent 1px),
+        radial-gradient(#ffffff22 1px, transparent 1px);
+      background-size: 70px 70px, 110px 110px, 160px 160px;
+      background-position: 0 0, 30px 60px, 80px 20px;
+      animation: starMove 12s linear infinite;
+      opacity:.35;
+    }
+    @keyframes starMove{
+      from{ transform: translateY(0); }
+      to{ transform: translateY(120px); }
+    }
+
+    .wrap{
+      width:min(520px, 96vw);
+    }
+
+    .title{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:12px;
+      margin-bottom:12px;
+    }
+    .title h1{
+      font-size:14px;
+      margin:0;
+      letter-spacing:1px;
+    }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      border:2px solid var(--line);
+      border-radius:14px;
+      padding:14px;
+      box-shadow: 0 12px 40px rgba(0,0,0,.35);
+      position:relative;
+      overflow:hidden;
+    }
+
+    .hud{
+      display:flex;
+      gap:10px;
+      margin-bottom:10px;
+      flex-wrap:wrap;
+    }
+    .pill{
+      flex:1;
+      min-width:150px;
+      background:var(--panel);
+      border:2px solid var(--line);
+      border-radius:12px;
+      padding:10px 10px;
+      font-size:10px;
+      color:var(--muted);
+    }
+    .pill b{ color:var(--txt); }
+
+    .game{
+      position:relative;
+      width:100%;
+      aspect-ratio: 3 / 4;
+      max-height: 72vh;
+      
+      background: linear-gradient(
+        180deg,
+        #1b1f3a 0%,
+        #0f1224 100%
+        );
+      
+      box-shadow: inset 0 0 60px rgba(255,120,40,0.15);
+      
+      border:2px solid var(--line);
+      border-radius:12px;
+      overflow:hidden;
+
+      /* 픽셀 느낌: 계단형 렌더링 */
+      image-rendering: pixelated;
+      touch-action: none; /* 모바일 드래그 방지 */
+    }
+
+    /* 플레이어(피하는 캐릭터) */
+  .player{
+  position:absolute;
+  width:34px;
+  height:34px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  animation: playerBob 1.15s ease-in-out infinite;
+  filter: drop-shadow(0 6px 10px rgba(0,0,0,.35));
+}
+
+.player .robot{ width:100%; height:100%; }
+
+@keyframes playerBob{
+  0%,100%{ transform: translateY(0) rotate(-1deg); }
+  50%{ transform: translateY(-2px) rotate(1deg); }
+}
+
+.player .rb-eye{
+  transform-origin:center;
+  animation: rbBlink 4.2s infinite;
+}
+@keyframes rbBlink{
+  0%,92%,100%{ transform: scaleY(1); }
+  94%,96%{ transform: scaleY(0.15); }
+}
+
+.player .rb-antenna{
+  transform-origin:32px 14px;
+  animation: rbWiggle 1.6s ease-in-out infinite;
+}
+@keyframes rbWiggle{
+  0%,100%{ transform: rotate(0deg); }
+  50%{ transform: rotate(6deg); }
+}
+
+.player .rb-scan{
+  animation: rbScan 1.6s linear infinite;
+}
+@keyframes rbScan{
+  0%{ opacity:0; transform: translateX(-6px); }
+  15%{ opacity:.35; }
+  50%{ opacity:.35; transform: translateX(18px); }
+  70%,100%{ opacity:0; transform: translateX(18px); }
+}
+
+    /* 장애물 */
+    .hazard{
+      position:absolute;
+      width:28px;
+      height:28px;
+
+      background-image: url("https://cdn-icons-png.flaticon.com/512/564/564619.png");
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+
+      border-radius: 6px;
+      animation: bombPulse .9s ease-in-out infinite;
+      filter: drop-shadow(0 0 6px rgba(255,80,80,.5));
+    }
+    @keyframes bombPulse{
+      0%,100% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+    }
+
+    /* 코인(XGP채굴수량) */
+    .coin{
+      position:absolute;
+      width:26px;
+      height:26px;
+      background-image: url("./coin.png");
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      border-radius:6px;
+      animation: coinPulse .8s ease-in-out infinite;
+    }
+    @keyframes coinPulse{
+      0%,100%{ transform: scale(1); filter: brightness(1); }
+      50%{ transform: scale(1.08); filter: brightness(1.15); }
+    }
+
+    /* 히트(맞았을 때) 흔들림 */
+    .shake{
+      animation: shake .18s linear 3;
+    }
+    @keyframes shake{
+      0%{ transform: translate(0,0); }
+      25%{ transform: translate(3px, -2px); }
+      50%{ transform: translate(-3px, 2px); }
+      75%{ transform: translate(2px, 2px); }
+      100%{ transform: translate(0,0); }
+    }
+
+    .btnRow{
+      display:flex; gap:10px; margin-top:12px;
+    }
+    button{
+      flex:1;
+      border:2px solid var(--line);
+      background: var(--panel);
+      color: var(--txt);
+      font-family: inherit;
+      padding:12px 10px;
+      border-radius:12px;
+      font-size:10px;
+      cursor:pointer;
+    }
+    button:active{ transform: translateY(1px); }
+    .primary{ border-color:#3b6bd8; }
+
+    .help{
+      margin-top:10px;
+      color:var(--muted);
+      font-size:9px;
+      line-height:1.55;
+    }
+
+    /* 시작/게임오버 오버레이 */
+    .overlay{
+      position:absolute; inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      background: linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.25));
+      backdrop-filter: blur(2px);
+    }
+    .panel{
+      width:min(360px, 92%);
+      background: rgba(16,26,51,.92);
+      border:2px solid var(--line);
+      border-radius:14px;
+      padding:14px;
+      text-align:center;
+    }
+    .panel h2{ margin:0 0 8px; font-size:12px; }
+    .panel p{ margin:0 0 12px; color:var(--muted); font-size:9px; line-height:1.6; }
+    .panel .big{ font-size:11px; color:var(--txt); margin-bottom:10px; }
+
+    /* XGP채굴갯 팝업(+1) */
+    .pop{
+      position:absolute;
+      font-size:10px;
+      color: var(--warn);
+      text-shadow: 2px 2px 0 rgba(0,0,0,.45);
+      animation: pop 700ms ease-out forwards;
+      pointer-events:none;
+    }
+    @keyframes pop{
+      from{ transform: translateY(0); opacity:1; }
+      to{ transform: translateY(-18px); opacity:0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="stars"></div>
+
+  <div class="wrap">
+    <div class="title">
+      <h1>XGP 채굴게임</h1>
+      <div style="font-size:9px; color:var(--muted);">A / D 또는 드래그</div>
+    </div>
+
+    <div class="card">
+      <div class="hud">
+        <div class="pill">시간: <b id="time">0.0</b>s</div>
+        <div class="pill">XGP채굴수량: <b id="score">0</b></div>
+        <div class="pill">최고: <b id="best">0</b></div>
+      </div>
+
+      <div class="game" id="game">
+        <div class="player" id="player" aria-label="robot">
+  <svg class="robot" viewBox="0 0 64 64" role="img" aria-hidden="true">
+    <defs>
+      <linearGradient id="rb_body" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0" stop-color="#e9f2ff"/>
+        <stop offset="1" stop-color="#b7c9e6"/>
+      </linearGradient>
+      <linearGradient id="rb_face" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0" stop-color="#2a3550"/>
+        <stop offset="1" stop-color="#1a2236"/>
+      </linearGradient>
+    </defs>
+
+    <!-- antenna -->
+    <g class="rb-antenna">
+      <rect x="30.5" y="6" width="3" height="10" rx="1.5" fill="#cfe0ff" />
+      <circle cx="32" cy="5.5" r="4" fill="#ff5e5e"/>
+      <circle cx="32" cy="5.5" r="2.2" fill="#ffd1d1"/>
+    </g>
+
+    <!-- head -->
+    <g class="rb-head">
+      <rect x="14" y="14" width="36" height="28" rx="8" fill="url(#rb_body)" stroke="#2a3550" stroke-width="2"/>
+      <rect x="18" y="18" width="28" height="18" rx="6" fill="url(#rb_face)"/>
+      <rect class="rb-scan" x="18" y="18" width="10" height="18" rx="6" fill="#7df9ff" opacity="0.0"/>
+
+      <!-- eyes -->
+      <g class="rb-eyes">
+        <rect class="rb-eye" x="22" y="22" width="8" height="8" rx="3" fill="#7df9ff"/>
+        <rect class="rb-eye" x="34" y="22" width="8" height="8" rx="3" fill="#7df9ff"/>
+        <circle cx="26" cy="26" r="1.4" fill="#ffffff"/>
+        <circle cx="38" cy="26" r="1.4" fill="#ffffff"/>
+      </g>
+
+      <!-- mouth -->
+      <rect x="26" y="32" width="12" height="3" rx="1.5" fill="#ffd166" opacity="0.95"/>
+    </g>
+
+    <!-- body -->
+    <g class="rb-body">
+      <rect x="18" y="42" width="28" height="16" rx="7" fill="url(#rb_body)" stroke="#2a3550" stroke-width="2"/>
+      <rect x="22" y="46" width="20" height="8" rx="4" fill="#ffffff" opacity="0.25"/>
+      <circle cx="26" cy="50" r="2.2" fill="#ffd166"/>
+      <circle cx="38" cy="50" r="2.2" fill="#ff9a3c"/>
+    </g>
+  </svg>
+</div>
+
+        <div class="overlay" id="overlay">
+          <div class="panel">
+            <h2 id="ovTitle">시작 준비!</h2>
+            <p id="ovDesc">빨간 장애물을 피하면서<br/>노란 코인을 먹어 점수를 올리세요.</p>
+            <div class="big" id="ovBig">START</div>
+            <button class="primary" id="startBtn">게임 시작</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="btnRow">
+        <button id="restartBtn">리셋</button>
+        <button id="hardBtn" class="primary">난이도: EASY</button>
+      </div>
+
+      <div class="help">
+        조작: PC는 A/D(좌우) 또는 방향키, 모바일은 캐릭터를 드래그<br/>
+        목표: 생존 시간 + 코인 점수. 맞으면 게임 오버!
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const game = document.getElementById("game");
+    const player = document.getElementById("player");
+    const overlay = document.getElementById("overlay");
+    const startBtn = document.getElementById("startBtn");
+    const restartBtn = document.getElementById("restartBtn");
+    const hardBtn = document.getElementById("hardBtn");
+
+    const timeEl = document.getElementById("time");
+    const scoreEl = document.getElementById("score");
+    const bestEl = document.getElementById("best");
+
+    const ovTitle = document.getElementById("ovTitle");
+    const ovDesc = document.getElementById("ovDesc");
+    const ovBig  = document.getElementById("ovBig");
+
+    // 상태
+    let running = false;
+    let t0 = 0;
+    let raf = null;
+    let score = 0;
+    let best = Number(localStorage.getItem("pixel_dodge_best") || 0);
+
+    // 플레이어 좌표(픽셀 느낌이라 정수로)
+    let px = 0; // left in px (0 ~ max)
+    const pSize = 34;
+
+    // 난이도
+    const modes = [
+      { name:"EASY", hazardRate: 650, hazardSpeed: 220, coinRate: 1100, coinSpeed: 150 },
+      { name:"HARD", hazardRate: 430, hazardSpeed: 290, coinRate: 1300, coinSpeed: 175 }
+    ];
+    let modeIdx = 0;
+
+    bestEl.textContent = best;
+
+    function gameRect(){
+      return game.getBoundingClientRect();
+    }
+
+    function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+
+    function setPlayerX(x){
+      const rect = gameRect();
+      const max = rect.width - pSize;
+      px = clamp(Math.round(x), 0, Math.round(max));
+      player.style.left = (px + pSize/2) + "px";
+    }
+
+    function reset(){
+      stop();
+      // 제거
+      [...game.querySelectorAll(".hazard,.coin,.pop")].forEach(el => el.remove());
+      score = 0;
+      scoreEl.textContent = score;
+      timeEl.textContent = "0.0";
+      // 플레이어 중앙
+      const rect = gameRect();
+      setPlayerX(rect.width/2 - pSize/2);
+      player.style.top = Math.round(rect.height * 0.72) + "px";
+
+      showOverlay("시작 준비!", "빨간 장애물을 피하면서<br/>노란 코인을 먹어 점수를 올리세요.", "START");
+    }
+
+    function showOverlay(title, desc, big){
+      ovTitle.textContent = title;
+      ovDesc.innerHTML = desc;
+      ovBig.textContent = big;
+      overlay.style.display = "flex";
+    }
+    function hideOverlay(){ overlay.style.display = "none"; }
+
+    // 충돌 체크
+    function hit(a, b){
+      const ar = a.getBoundingClientRect();
+      const br = b.getBoundingClientRect();
+      return !(ar.right < br.left || ar.left > br.right || ar.bottom < br.top || ar.top > br.bottom);
+    }
+
+    // 팝업
+    function popText(x, y, text){
+      const el = document.createElement("div");
+      el.className = "pop";
+      el.textContent = text;
+      el.style.left = x + "px";
+      el.style.top = y + "px";
+      game.appendChild(el);
+      setTimeout(()=> el.remove(), 750);
+    }
+
+    // 장애물/코인 생성
+    function spawnHazard(){
+      const rect = gameRect();
+      const el = document.createElement("div");
+      el.className = "hazard";
+      el.style.left = Math.round(Math.random() * (rect.width - 22)) + "px";
+      el.style.top = "-30px";
+      el.dataset.y = "-30";
+      game.appendChild(el);
+      return el;
+    }
+
+    function spawnCoin(){
+      const rect = gameRect();
+      const el = document.createElement("div");
+      el.className = "coin";
+      el.style.left = Math.round(Math.random() * (rect.width - 26)) + "px";
+      el.style.top = "-26px";
+      el.dataset.y = "-26";
+      game.appendChild(el);
+      return el;
+    }
+
+    // 이동 업데이트
+    function tick(now){
+      if (!running) return;
+      const dt = (now - t0) / 1000;
+      t0 = now;
+
+      // 시간 표시
+      const lived = (performance.now() - startAt) / 1000;
+      timeEl.textContent = lived.toFixed(1);
+
+      const rect = gameRect();
+      const hazards = [...game.querySelectorAll(".hazard")];
+      const coins = [...game.querySelectorAll(".coin")];
+
+      // 내려오기
+      const m = modes[modeIdx];
+
+      hazards.forEach(h => {
+        let y = Number(h.dataset.y);
+        y += m.hazardSpeed * dt;
+        h.dataset.y = y;
+        h.style.top = Math.round(y) + "px";
+        if (y > rect.height + 40) h.remove();
+        else if (hit(player, h)) gameOver();
+      });
+
+      coins.forEach(c => {
+        let y = Number(c.dataset.y);
+        y += m.coinSpeed * dt;
+        c.dataset.y = y;
+        c.style.top = Math.round(y) + "px";
+        if (y > rect.height + 40) c.remove();
+        else if (hit(player, c)) {
+          c.remove();
+          score += 1;
+          scoreEl.textContent = score;
+          const pr = player.getBoundingClientRect();
+          const gr = rect;
+          popText(Math.round(pr.left - gr.left), Math.round(pr.top - gr.top - 8), "+1");
+        }
+      });
+
+      raf = requestAnimationFrame(tick);
+    }
+
+    let hazardTimer = null;
+    let coinTimer = null;
+    let startAt = 0;
+
+    function start(){
+      reset(); // clean
+      hideOverlay();
+      running = true;
+      startAt = performance.now();
+      t0 = performance.now();
+
+      const m = modes[modeIdx];
+      hazardTimer = setInterval(spawnHazard, m.hazardRate);
+      coinTimer = setInterval(spawnCoin, m.coinRate);
+
+      raf = requestAnimationFrame(tick);
+    }
+
+    function stop(){
+      running = false;
+      if (raf) cancelAnimationFrame(raf);
+      raf = null;
+      clearInterval(hazardTimer);
+      clearInterval(coinTimer);
+      hazardTimer = null;
+      coinTimer = null;
+    }
+
+    function gameOver(){
+      if (!running) return;
+      stop();
+
+      // 기록 업데이트(생존시간+코인점수 느낌: 점수에 시간 보너스)
+      const lived = (performance.now() - startAt) / 1000;
+      const final = Math.floor(score * 10 + lived * 5);
+
+      if (final > best) {
+        best = final;
+        localStorage.setItem("pixel_dodge_best", String(best));
+        bestEl.textContent = best;
+      }
+
+      game.classList.remove("shake");
+      void game.offsetWidth; // reflow for restart animation
+      game.classList.add("shake");
+
+      showOverlay("게임 오버!", `최종 점수: <b style="color:var(--txt)">${final}</b><br/>코인: ${score} / 생존: ${lived.toFixed(1)}s`, "RETRY");
+      startBtn.textContent = "다시 시작";
+    }
+
+    // 입력(키보드)
+    const keyState = { left:false, right:false };
+    function moveBy(dx){
+      setPlayerX(px + dx);
+    }
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowLeft" || e.key.toLowerCase() === "a") keyState.left = true;
+      if (e.key === "ArrowRight" || e.key.toLowerCase() === "d") keyState.right = true;
+    });
+    window.addEventListener("keyup", (e) => {
+      if (e.key === "ArrowLeft" || e.key.toLowerCase() === "a") keyState.left = false;
+      if (e.key === "ArrowRight" || e.key.toLowerCase() === "d") keyState.right = false;
+    });
+
+    // 키 입력으로 부드럽게 이동(raf)
+    function controlLoop(){
+      const speed = 6; // 픽셀 이동
+      if (keyState.left) moveBy(-speed);
+      if (keyState.right) moveBy(speed);
+      requestAnimationFrame(controlLoop);
+    }
+    requestAnimationFrame(controlLoop);
+
+    // 입력(모바일 드래그)
+    let dragging = false;
+    function pointerX(e){
+      const rect = gameRect();
+      const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+      return x - pSize/2;
+    }
+    game.addEventListener("mousedown", (e)=>{ dragging = true; setPlayerX(pointerX(e)); });
+    window.addEventListener("mousemove", (e)=>{ if(dragging) setPlayerX(pointerX(e)); });
+    window.addEventListener("mouseup", ()=> dragging = false);
+
+    game.addEventListener("touchstart", (e)=>{ dragging = true; setPlayerX(pointerX(e)); }, {passive:false});
+    game.addEventListener("touchmove", (e)=>{ if(dragging) setPlayerX(pointerX(e)); }, {passive:false});
+    game.addEventListener("touchend", ()=> dragging = false);
+
+    // 버튼
+    startBtn.addEventListener("click", () => {
+      startBtn.textContent = "게임 시작";
+      start();
+    });
+
+    restartBtn.addEventListener("click", () => reset());
+
+    hardBtn.addEventListener("click", () => {
+      modeIdx = (modeIdx + 1) % modes.length;
+      hardBtn.textContent = "난이도: " + modes[modeIdx].name;
+      reset();
+    });
+
+    // 처음 로드 시 중앙 배치
+    window.addEventListener("resize", () => {
+      const rect = gameRect();
+      setPlayerX(rect.width/2 - pSize/2);
+    });
+
+    reset();
+  </script>
+</body>
+</html>
