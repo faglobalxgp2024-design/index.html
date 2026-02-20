@@ -590,7 +590,7 @@ speedMultiplier = 1 + progress; // 최대 2배
 
       coins.forEach(c => {
         let y = Number(c.dataset.y);
-        y += m.coinSpeed * (speedMultiplier * 1.15) * dt;
+        y += m.coinSpeed * (speedMultiplier * 1.5) * dt;
         c.dataset.y = y;
         c.style.top = Math.round(y) + "px";
         if (y > rect.height + 40) c.remove();
