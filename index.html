@@ -571,9 +571,17 @@
       // 내려오기
       const m = modes[modeIdx];
 
+      // ===== 시간 기반 속도 배율 =====
+let speedMultiplier = 1;
+
+if (lived > 30) {
+  const progress = Math.min((lived - 30) / 90, 1); // 30초~120초 구간
+  speedMultiplier = 1 + progress; // 최대 2배
+}
+
       hazards.forEach(h => {
         let y = Number(h.dataset.y);
-        y += m.hazardSpeed * dt;
+        y += m.hazardSpeed * speedMultiplier * dt;
         h.dataset.y = y;
         h.style.top = Math.round(y) + "px";
         if (y > rect.height + 40) h.remove();
@@ -582,7 +590,7 @@
 
       coins.forEach(c => {
         let y = Number(c.dataset.y);
-        y += m.coinSpeed * dt;
+        y += m.coinSpeed * speedMultiplier * dt;
         c.dataset.y = y;
         c.style.top = Math.round(y) + "px";
         if (y > rect.height + 40) c.remove();
