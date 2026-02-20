@@ -857,21 +857,25 @@ speedMultiplier = 1 + progress; // 최대 2배
     let coinTimer = null;
     let startAt = 0;
 
-    function start(){
-  startBGM(); // ⭐ 시작할 때 항상 켜기
+function start(){
 
-      reset(); // clean
-      hideOverlay();
-      running = true;
-      startAt = performance.now();
-      t0 = performance.now();
+  reset(); // ⭐ 먼저 초기화
 
-      const m = modes[modeIdx];
-      hazardTimer = setInterval(spawnHazard, m.hazardRate);
-      coinTimer = setInterval(spawnCoin, m.coinRate);
+  startBGM(); // ⭐ 초기화 후 BGM
 
-      raf = requestAnimationFrame(tick);
-    }
+  hideOverlay();
+  running = true;
+
+  startAt = performance.now();
+  t0 = performance.now();
+
+  const m = modes[modeIdx];
+
+  hazardTimer = setInterval(spawnHazard, m.hazardRate);
+  coinTimer = setInterval(spawnCoin, m.coinRate);
+
+  raf = requestAnimationFrame(tick);
+}
 
     function stop(){
       running = false;
