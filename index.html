@@ -574,9 +574,9 @@
       // ===== 시간 기반 속도 배율 =====
 let speedMultiplier = 1;
 
-if (lived > 10) {
-  const progress = Math.min((lived - 30) / 90, 1); // 30초~120초 구간
-  speedMultiplier = 1 + progress; // 최대 2배
+// 10초부터 증가 → 120초에 2배
+const progress = Math.min(Math.max((lived - 10) / 110, 0), 1);
+speedMultiplier = 1 + progress; // 최대 2배
 }
 
       hazards.forEach(h => {
