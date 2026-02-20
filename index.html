@@ -574,7 +574,7 @@
       // ===== 시간 기반 속도 배율 =====
 let speedMultiplier = 1;
 
-if (lived > 30) {
+if (lived > 10) {
   const progress = Math.min((lived - 30) / 90, 1); // 30초~120초 구간
   speedMultiplier = 1 + progress; // 최대 2배
 }
