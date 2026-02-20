@@ -118,13 +118,19 @@
   }
 
   .card{
-    height:100%;
-    border-radius:0;
-    padding:10px;
-  }
+  height:100%;
+  padding:10px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom));
+
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
 
   .game{
-    height:calc(100dvh - 170px);
+    flex:1 1 auto;
+    height:auto;  
+    min-height:0; 
     max-height:none;
   }
 
