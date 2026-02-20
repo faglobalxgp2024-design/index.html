@@ -108,12 +108,27 @@
 }
 
 @media (max-width: 600px){
+  body{ padding:0; }
+
   .wrap{
-    max-width:none;
     width:100vw;
-    height:100vh;
+    height:100dvh;
+    max-width:none;
     padding:0;
   }
+
+  .card{
+    height:100%;
+    border-radius:0;
+    padding:10px;
+  }
+
+  .game{
+    height:calc(100dvh - 170px);
+    max-height:none;
+  }
+
+  .help{ display:none; }
 }
     
     .title{
@@ -780,7 +795,8 @@ function sfxOver(){
 
     // 플레이어 좌표(픽셀 느낌이라 정수로)
     let px = 0; // left in px (0 ~ max)
-    const pSize = 40;
+    const isMobile = matchMedia("(max-width: 600px)").matches;
+const pSize = isMobile ? 48 : 40;
 
     // 난이도
     const modes = [
@@ -1012,10 +1028,15 @@ function start(){
     // 입력(모바일 드래그)
     let dragging = false;
     function pointerX(e){
-      const rect = gameRect();
-      const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-      return x - pSize/2;
-    }
+  const rect = gameRect();
+  const clientX = (e.touches ? e.touches[0].clientX : e.clientX);
+  let x = clientX - rect.left;
+
+  // 👉 손가락 가림 방지 (오른손 기준)
+  if (e.touches) x -= 28;
+
+  return x - pSize/2;
+}
     game.addEventListener("mousedown", (e)=>{ dragging = true; setPlayerX(pointerX(e)); });
     window.addEventListener("mousemove", (e)=>{ if(dragging) setPlayerX(pointerX(e)); });
     window.addEventListener("mouseup", ()=> dragging = false);
