@@ -483,6 +483,29 @@
     const startBtn = document.getElementById("startBtn");
     const restartBtn = document.getElementById("restartBtn");
     const hardBtn = document.getElementById("hardBtn");
+    const hardBtn = document.getElementById("hardBtn");
+
+
+// ===== 폭발 이펙트 함수 (여기에 추가!!) =====
+function spawnExplosionAt(el){
+  const gr = game.getBoundingClientRect();
+  const r = el.getBoundingClientRect();
+
+  const ex = document.createElement("div");
+  ex.className = "explosion";
+
+  const cx = (r.left + r.right) / 2 - gr.left;
+  const cy = (r.top + r.bottom) / 2 - gr.top;
+
+  ex.style.left = Math.round(cx) + "px";
+  ex.style.top  = Math.round(cy) + "px";
+
+  game.appendChild(ex);
+  setTimeout(() => ex.remove(), 500);
+}
+
+
+// ===== BGM (외부 파일 없이 루프) =====
     // ===== BGM (외부 파일 없이 루프) =====
 // ===== BGM: 신나는 8-bit 멜로디 루프 =====
 let bgmOn = true;
