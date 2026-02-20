@@ -61,6 +61,41 @@
       to{ transform: translateY(120px); }
     }
 
+    /* ===== 폭발 이펙트 ===== */
+.explosion{
+  position:absolute;
+  width:56px;
+  height:56px;
+  transform: translate(-50%, -50%);
+  pointer-events:none;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255,255,255,.95) 0 18%, transparent 19%),
+    radial-gradient(circle at 50% 50%, rgba(255,210,90,.95) 0 34%, transparent 35%),
+    radial-gradient(circle at 50% 50%, rgba(255,80,80,.9) 0 52%, transparent 53%);
+  filter: drop-shadow(0 0 14px rgba(255,120,60,.9));
+  border-radius:999px;
+  animation: boom .45s ease-out forwards;
+}
+
+.explosion::after{
+  content:"";
+  position:absolute;
+  inset:-6px;
+  border-radius:999px;
+  border:2px dashed rgba(255,210,90,.65);
+  animation: ring .45s ease-out forwards;
+}
+
+@keyframes boom{
+  0%{ transform: translate(-50%, -50%) scale(.35); opacity:0; }
+  15%{ opacity:1; }
+  100%{ transform: translate(-50%, -50%) scale(1.25); opacity:0; }
+}
+
+@keyframes ring{
+  0%{ transform: scale(.2); opacity:.8; }
+  100%{ transform: scale(1.15); opacity:0; }
+}
     .wrap{
       width:min(520px, 96vw);
     }
@@ -687,8 +722,12 @@ function sfxCoin(){
 
 function sfxOver(){
   ensureAudioReady().then(() => {
-    beep({ freq: 220, dur: 0.12, type:"sawtooth", vol:0.14, endFreq: 110 });
-    setTimeout(() => beep({ freq: 165, dur: 0.16, type:"sawtooth", vol:0.14, endFreq: 90 }), 130);
+    // 펑! (짧고 굵게)
+    beep({ freq: 140, dur: 0.10, type:"square",  vol:0.28, endFreq: 70 });
+    // 찌지직 + 잔향 느낌
+    setTimeout(() => beep({ freq: 90, dur: 0.12, type:"sawtooth", vol:0.22, endFreq: 40 }), 70);
+    // 작은 파편 느낌
+    setTimeout(() => beep({ freq: 220, dur: 0.05, type:"triangle", vol:0.18, endFreq: 160 }), 130);
   }).catch(()=>{});
 }
 
@@ -829,7 +868,10 @@ speedMultiplier = 1 + progress; // 최대 2배
         h.dataset.y = y;
         h.style.top = Math.round(y) + "px";
         if (y > rect.height + 40) h.remove();
-        else if (hit(player, h)) gameOver();
+        else if (hit(player, h)) {
+  spawnExplosionAt(h); // 폭발 이펙트
+  gameOver();          // 게임오버(사운드 포함)
+}
       });
 
       coins.forEach(c => {
