@@ -453,7 +453,12 @@
 // ===== WebAudio SFX (모바일/크롬/아이폰 안정 재생) =====
 let audioCtx = null;
 let sfx = { coin:null, start:null, over:null };
+let audioReady = null;
 
+function ensureAudioReady(){
+  if (!audioReady) audioReady = initAudio();
+  return audioReady;
+}
 async function initAudio(){
   if (audioCtx) return; // 이미 초기화됨
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -490,9 +495,9 @@ function playSfx(buf, gainValue=0.6){
   src.start(0);
 }
 
-function sfxCoin(){  playSfx(sfx.coin, 0.45); }
-function sfxStart(){ playSfx(sfx.start, 0.55); }
-function sfxOver(){  playSfx(sfx.over, 0.65); }
+function sfxCoin(){  ensureAudioReady().then(()=> playSfx(sfx.coin, 0.45)).catch(()=>{}); }
+function sfxStart(){ ensureAudioReady().then(()=> playSfx(sfx.start, 0.55)).catch(()=>{}); }
+function sfxOver(){  ensureAudioReady().then(()=> playSfx(sfx.over, 0.65)).catch(()=>{}); }
     
     const timeEl = document.getElementById("time");
     const scoreEl = document.getElementById("score");
@@ -747,12 +752,16 @@ speedMultiplier = 1 + progress; // 최대 2배
     game.addEventListener("touchend", ()=> dragging = false);
 
     // 버튼
-    startBtn.addEventListener("click", async () => {
-  await initAudio();   // 오디오 언락 + 로드
-  sfxStart();          // 시작 소리
+    startBtn.addEventListener("click", () => {
+  // 오디오는 로딩만 걸어두고 (기다리지 않음)
+  ensureAudioReady();
 
+  // 게임은 즉시 시작 (두 번 클릭 문제 해결)
   startBtn.textContent = "게임 시작";
   start();
+
+  // 시작 소리는 오디오 준비되면 재생
+  sfxStart();
 });
 
     restartBtn.addEventListener("click", () => reset());
