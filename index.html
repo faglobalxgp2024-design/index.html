@@ -450,54 +450,71 @@
     const hardBtn = document.getElementById("hardBtn");
     
     // ===== 사운드 =====
-// ===== WebAudio SFX (모바일/크롬/아이폰 안정 재생) =====
+// ===== SFX (외부 파일 없이 100% 동작) =====
 let audioCtx = null;
-let sfx = { coin:null, start:null, over:null };
 let audioReady = null;
 
 function ensureAudioReady(){
   if (!audioReady) audioReady = initAudio();
   return audioReady;
 }
-async function initAudio(){
-  if (audioCtx) return; // 이미 초기화됨
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-  // 일부 브라우저는 suspend로 시작 -> resume 필요
+async function initAudio(){
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
   if (audioCtx.state !== "running") {
     try { await audioCtx.resume(); } catch(e) {}
   }
+}
 
-  async function loadBuffer(url){
-    const res = await fetch(url);
-    const arr = await res.arrayBuffer();
-    return await audioCtx.decodeAudioData(arr);
+// 비프음 생성기
+function beep({ freq=440, dur=0.08, type="square", vol=0.12, endFreq=null } = {}){
+  if (!audioCtx || audioCtx.state !== "running") return;
+
+  const t = audioCtx.currentTime;
+
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, t);
+  if (endFreq != null) {
+    osc.frequency.exponentialRampToValueAtTime(Math.max(40, endFreq), t + dur);
   }
 
-  // 효과음 로드
-  sfx.coin  = await loadBuffer("https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3");
-  sfx.start = await loadBuffer("https://assets.mixkit.co/active_storage/sfx/270/270-preview.mp3");
-  sfx.over  = await loadBuffer("https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3");
-}
+  // 클릭 방지 엔벨로프
+  gain.gain.setValueAtTime(0.0001, t);
+  gain.gain.exponentialRampToValueAtTime(vol, t + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
 
-function playSfx(buf, gainValue=0.6){
-  if (!audioCtx || !buf) return;
-
-  const src = audioCtx.createBufferSource();
-  src.buffer = buf;
-
-  const gain = audioCtx.createGain();
-  gain.gain.value = gainValue;
-
-  src.connect(gain);
+  osc.connect(gain);
   gain.connect(audioCtx.destination);
 
-  src.start(0);
+  osc.start(t);
+  osc.stop(t + dur + 0.02);
 }
 
-function sfxCoin(){  ensureAudioReady().then(()=> playSfx(sfx.coin, 0.45)).catch(()=>{}); }
-function sfxStart(){ ensureAudioReady().then(()=> playSfx(sfx.start, 0.55)).catch(()=>{}); }
-function sfxOver(){  ensureAudioReady().then(()=> playSfx(sfx.over, 0.65)).catch(()=>{}); }
+// 효과음 3종
+function sfxStart(){
+  ensureAudioReady().then(() => {
+    beep({ freq: 523, dur: 0.06, type:"square", vol:0.12 });
+    setTimeout(() => beep({ freq: 659, dur: 0.07, type:"square", vol:0.12 }), 70);
+  }).catch(()=>{});
+}
+
+function sfxCoin(){
+  ensureAudioReady().then(() => {
+    beep({ freq: 880, dur: 0.05, type:"triangle", vol:0.10, endFreq: 1200 });
+  }).catch(()=>{});
+}
+
+function sfxOver(){
+  ensureAudioReady().then(() => {
+    beep({ freq: 220, dur: 0.12, type:"sawtooth", vol:0.14, endFreq: 110 });
+    setTimeout(() => beep({ freq: 165, dur: 0.16, type:"sawtooth", vol:0.14, endFreq: 90 }), 130);
+  }).catch(()=>{});
+}
     
     const timeEl = document.getElementById("time");
     const scoreEl = document.getElementById("score");
@@ -753,15 +770,11 @@ speedMultiplier = 1 + progress; // 최대 2배
 
     // 버튼
     startBtn.addEventListener("click", () => {
-  // 오디오는 로딩만 걸어두고 (기다리지 않음)
-  ensureAudioReady();
+  ensureAudioReady();   // 클릭 순간에 오디오 언락
+  sfxStart();           // 시작 소리
 
-  // 게임은 즉시 시작 (두 번 클릭 문제 해결)
   startBtn.textContent = "게임 시작";
   start();
-
-  // 시작 소리는 오디오 준비되면 재생
-  sfxStart();
 });
 
     restartBtn.addEventListener("click", () => reset());
