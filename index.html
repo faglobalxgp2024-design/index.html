@@ -450,31 +450,49 @@
     const hardBtn = document.getElementById("hardBtn");
     
     // ===== 사운드 =====
-const sndCoin = new Audio("https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3");
-const sndStart = new Audio("https://assets.mixkit.co/active_storage/sfx/270/270-preview.mp3");
-const sndGameOver = new Audio("https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3");
+// ===== WebAudio SFX (모바일/크롬/아이폰 안정 재생) =====
+let audioCtx = null;
+let sfx = { coin:null, start:null, over:null };
 
-sndCoin.volume = 0.4;
-sndStart.volume = 0.5;
-sndGameOver.volume = 0.6;
+async function initAudio(){
+  if (audioCtx) return; // 이미 초기화됨
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-    // ===== 사운드 언락 =====
-const sfxList = [sndCoin, sndStart, sndGameOver];
+  // 일부 브라우저는 suspend로 시작 -> resume 필요
+  if (audioCtx.state !== "running") {
+    try { await audioCtx.resume(); } catch(e) {}
+  }
 
-function unlockAudioOnce(){
-  sfxList.forEach(a => {
-    const wasMuted = a.muted;
-    a.muted = true;
-    const p = a.play();
-    if (p && p.then){
-      p.then(() => {
-        a.pause();
-        a.currentTime = 0;
-        a.muted = wasMuted;
-      }).catch(()=>{ a.muted = wasMuted; });
-    }
-  });
+  async function loadBuffer(url){
+    const res = await fetch(url);
+    const arr = await res.arrayBuffer();
+    return await audioCtx.decodeAudioData(arr);
+  }
+
+  // 효과음 로드
+  sfx.coin  = await loadBuffer("https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3");
+  sfx.start = await loadBuffer("https://assets.mixkit.co/active_storage/sfx/270/270-preview.mp3");
+  sfx.over  = await loadBuffer("https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3");
 }
+
+function playSfx(buf, gainValue=0.6){
+  if (!audioCtx || !buf) return;
+
+  const src = audioCtx.createBufferSource();
+  src.buffer = buf;
+
+  const gain = audioCtx.createGain();
+  gain.gain.value = gainValue;
+
+  src.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  src.start(0);
+}
+
+function sfxCoin(){  playSfx(sfx.coin, 0.45); }
+function sfxStart(){ playSfx(sfx.start, 0.55); }
+function sfxOver(){  playSfx(sfx.over, 0.65); }
     
     const timeEl = document.getElementById("time");
     const scoreEl = document.getElementById("score");
@@ -622,8 +640,8 @@ speedMultiplier = 1 + progress; // 최대 2배
         c.style.top = Math.round(y) + "px";
         if (y > rect.height + 40) c.remove();
         else if (hit(player, c)) {
-          sndCoin.currentTime = 0;
-          sndCoin.play();
+          sfxCoin();
+          
           c.remove();
           score += 1;
           scoreEl.textContent = score;
@@ -671,8 +689,7 @@ speedMultiplier = 1 + progress; // 최대 2배
       if (!running) return;
       stop();
 
-      sndGameOver.currentTime = 0;
-      sndGameOver.play();
+      sfxOver();
 
       // 기록 업데이트(생존시간+코인점수 느낌: 점수에 시간 보너스)
       const lived = (performance.now() - startAt) / 1000;
@@ -731,11 +748,13 @@ speedMultiplier = 1 + progress; // 최대 2배
     game.addEventListener("touchend", ()=> dragging = false);
 
     // 버튼
-    startBtn.addEventListener("click", () => {
-      unlockAudioOnce();
-      startBtn.textContent = "게임 시작";
-      start();
-    });
+    startBtn.addEventListener("click", async () => {
+  await initAudio();  // 첫 클릭에서 오디오 언락 + 로드
+  sfxStart();         // 시작 사운드
+
+  startBtn.textContent = "게임 시작";
+  start();
+});
 
     restartBtn.addEventListener("click", () => reset());
 
