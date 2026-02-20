@@ -659,9 +659,8 @@ speedMultiplier = 1 + progress; // 최대 2배
     let startAt = 0;
 
     function start(){
-      sndStart.currentTime = 0;
-      sndStart.play();
-      
+    
+
       reset(); // clean
       hideOverlay();
       running = true;
@@ -749,8 +748,8 @@ speedMultiplier = 1 + progress; // 최대 2배
 
     // 버튼
     startBtn.addEventListener("click", async () => {
-  await initAudio();  // 첫 클릭에서 오디오 언락 + 로드
-  sfxStart();         // 시작 사운드
+  await initAudio();   // 오디오 언락 + 로드
+  sfxStart();          // 시작 소리
 
   startBtn.textContent = "게임 시작";
   start();
