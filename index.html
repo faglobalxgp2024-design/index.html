@@ -98,9 +98,24 @@
   100%{ transform: scale(1.15); opacity:0; }
 }
     .wrap{
-      width:min(520px, 96vw);
-    }
+  width:100%;
+  max-width:520px;
+}
 
+    .wrap{
+  width:100%;
+  max-width:520px;
+}
+
+@media (max-width: 600px){
+  .wrap{
+    max-width:none;
+    width:100vw;
+    height:100vh;
+    padding:0;
+  }
+}
+    
     .title{
       display:flex; align-items:center; justify-content:space-between;
       gap:12px;
@@ -140,11 +155,20 @@
     }
     .pill b{ color:var(--txt); }
 
-    .game{
-      position:relative;
-      width:100%;
-      aspect-ratio: 3 / 4;
-      max-height: 72vh;
+  .game{
+  position:relative;
+  width:100%;
+  aspect-ratio: 3 / 4;
+  max-height: 80vh;
+}
+
+@media (max-width: 600px){
+  .game{
+    aspect-ratio:auto;
+    height:calc(100vh - 120px);
+    max-height:none;
+  }
+}
       
       background: linear-gradient(
         180deg,
