@@ -951,17 +951,14 @@ function start(){
 
     // 버튼
 startBtn.addEventListener("click", () => {
-  // 오디오 준비(모바일/크롬 정책 대응)
-  ensureAudioReady()
-    .then(() => {
-      startBGM();   // 배경음악 켜기
-      sfxStart();   // 시작 효과음
-      start();      // ✅ 게임 시작은 여기서만!
-    })
-    .catch(() => {
-      // 오디오가 막혀도 게임은 시작되게
-      start();
-    });
+
+  ensureAudioReady().then(() => {
+    sfxStart();
+    start();
+  }).catch(() => {
+    start();
+  });
+
 });
 
     restartBtn.addEventListener("click", () => reset());
