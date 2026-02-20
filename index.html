@@ -469,7 +469,7 @@ async function initAudio(){
 }
 
 // 비프음 생성기
-function beep({ freq=440, dur=0.08, type="square", vol=0.12, endFreq=null } = {}){
+function beep({ freq=440, dur=0.08, type="square", vol=0.18, endFreq=null } = {}){
   if (!audioCtx || audioCtx.state !== "running") return;
 
   const t = audioCtx.currentTime;
@@ -770,8 +770,11 @@ speedMultiplier = 1 + progress; // 최대 2배
 
     // 버튼
     startBtn.addEventListener("click", () => {
-  ensureAudioReady();   // 클릭 순간에 오디오 언락
-  sfxStart();           // 시작 소리
+  ensureAudioReady()
+    .then(() => {
+      sfxStart(); // 오디오 준비 후 실행
+    })
+    .catch(() => {});
 
   startBtn.textContent = "게임 시작";
   start();
