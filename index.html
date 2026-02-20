@@ -796,7 +796,7 @@ function sfxOver(){
     // 플레이어 좌표(픽셀 느낌이라 정수로)
     let px = 0; // left in px (0 ~ max)
     const isMobile = matchMedia("(max-width: 600px)").matches;
-const pSize = isMobile ? 48 : 40;
+const pSize = isMobile ? 52 : 40;
 
     // 난이도
     const modes = [
@@ -868,7 +868,7 @@ const pSize = isMobile ? 48 : 40;
       const rect = gameRect();
       const el = document.createElement("div");
       el.className = "hazard";
-      el.style.left = Math.round(Math.random() * (rect.width - 22)) + "px";
+      el.style.left = Math.round(Math.random() * (rect.width - 30)) + "px";
       el.style.top = "-30px";
       el.dataset.y = "-30";
       game.appendChild(el);
