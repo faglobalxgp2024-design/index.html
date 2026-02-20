@@ -458,6 +458,24 @@ sndCoin.volume = 0.4;
 sndStart.volume = 0.5;
 sndGameOver.volume = 0.6;
 
+    // ===== 사운드 언락 =====
+const sfxList = [sndCoin, sndStart, sndGameOver];
+
+function unlockAudioOnce(){
+  sfxList.forEach(a => {
+    const wasMuted = a.muted;
+    a.muted = true;
+    const p = a.play();
+    if (p && p.then){
+      p.then(() => {
+        a.pause();
+        a.currentTime = 0;
+        a.muted = wasMuted;
+      }).catch(()=>{ a.muted = wasMuted; });
+    }
+  });
+}
+    
     const timeEl = document.getElementById("time");
     const scoreEl = document.getElementById("score");
     const bestEl = document.getElementById("best");
@@ -714,6 +732,7 @@ speedMultiplier = 1 + progress; // 최대 2배
 
     // 버튼
     startBtn.addEventListener("click", () => {
+      unlockAudioOnce();
       startBtn.textContent = "게임 시작";
       start();
     });
