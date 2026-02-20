@@ -514,25 +514,54 @@ function kick(){
   setTimeout(()=>playTone(60, 0.05, "sine", 0.06), 15);
 }
 
-const melody = [
+// ===== 패턴(지루하지 않게 2파트 + 가끔 필인) =====
+const melodyA = [
   "E5",null,"G5",null, "A5",null,"G5",null,
   "E5",null,"D5",null, "C5",null,"D5",null
 ];
-
-const lead = [
+const leadA = [
   null,"C5",null,"D5", null,"E5",null,"G5",
   null,"C5",null,"D5", null,"E5",null,"G5"
 ];
-
-const bass = [
+const bassA = [
   "C3",null,"C3",null, "A3",null,"A3",null,
   "F3",null,"F3",null, "G3",null,"G3",null
 ];
-
-const drum = [
+const drumA = [
   1,0,0,0, 2,0,1,0,
   1,0,0,0, 2,0,1,0
 ];
+
+// 파트B(다른 멜로디로 변주)
+const melodyB = [
+  "G5",null,"A5",null, "B5",null,"A5",null,
+  "G5",null,"E5",null, "D5",null,"E5",null
+];
+const leadB = [
+  null,"D5",null,"E5", null,"G5",null,"A5",
+  null,"D5",null,"E5", null,"G5",null,"A5"
+];
+const bassB = [
+  "A3",null,"A3",null, "F3",null,"F3",null,
+  "G3",null,"G3",null, "C3",null,"C3",null
+];
+const drumB = [
+  1,0,0,2, 0,0,1,0,
+  1,0,0,2, 0,2,1,0
+];
+
+// 필인(가끔만 사용, 짧게 난리나게)
+const fillMelody = [
+  null,"E5","G5","A5", null,"G5","E5","D5",
+  null,"E5","G5","A5", null,"B5","A5","G5"
+];
+const fillDrum = [
+  1,2,1,2, 1,2,1,2,
+  1,2,1,2, 1,2,1,2
+];
+
+// 몇 마디 진행했는지 (16스텝=1마디)
+let bgmBar = 0;
 
 function bgmTick(){
   if (!bgmOn) return;
@@ -540,20 +569,41 @@ function bgmTick(){
   const stepMs = (60000 / bgmTempo) / 4;
   const i = bgmStep % 16;
 
-  const m = melody[i];
-  if (m) playTone(NOTE[m], 0.11, "square", 0.055);
+  // 4마디 단위로 A <-> B 교대 (지루함 방지)
+  const useB = (Math.floor(bgmBar / 4) % 2) === 1;
 
-  const l = lead[i];
-  if (l) playTone(NOTE[l], 0.09, "triangle", 0.03);
+  // 8마디마다 1마디 필인 확률(50%)로 넣기
+  const isFillBar = (bgmBar > 0 && bgmBar % 8 === 0 && Math.random() < 0.5);
 
-  const b = bass[i];
+  // 현재 선택할 패턴
+  const M = isFillBar ? fillMelody : (useB ? melodyB : melodyA);
+  const L = useB ? leadB : leadA;
+  const B = useB ? bassB : bassA;
+  const D = isFillBar ? fillDrum : (useB ? drumB : drumA);
+
+  // 멜로디
+  const m = M[i];
+  if (m) playTone(NOTE[m], 0.11, "square", 0.058);
+
+  // 리드(너무 시끄러우면 0.02~0.03으로 낮춰)
+  const l = L[i];
+  if (l && !isFillBar) playTone(NOTE[l], 0.09, "triangle", 0.03);
+
+  // 베이스
+  const b = B[i];
   if (b) playTone(NOTE[b], 0.10, "triangle", 0.045);
 
-  const d = drum[i];
+  // 드럼
+  const d = D[i];
   if (d === 1) kick();
   if (d === 2) snare();
 
+  // 스텝 증가
   bgmStep = (bgmStep + 1) % 16;
+
+  // 마디 카운트(스텝이 0으로 돌아오면 1마디 끝)
+  if (bgmStep === 0) bgmBar++;
+
   bgmTimer = setTimeout(bgmTick, stepMs);
 }
 
@@ -808,6 +858,9 @@ speedMultiplier = 1 + progress; // 최대 2배
     let startAt = 0;
 
     function start(){
+  startBGM(); // ⭐ 시작할 때 항상 켜기
+  ...
+}
     
 
       reset(); // clean
@@ -836,7 +889,7 @@ speedMultiplier = 1 + progress; // 최대 2배
     function gameOver(){
       if (!running) return;
       stop();
-
+      stopBGM();
       sfxOver();
 
       // 기록 업데이트(생존시간+코인점수 느낌: 점수에 시간 보너스)
