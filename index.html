@@ -577,7 +577,7 @@ let speedMultiplier = 1;
 // 10초부터 증가 → 120초에 2배
 const progress = Math.min(Math.max((lived - 10) / 110, 0), 1);
 speedMultiplier = 1 + progress; // 최대 2배
-}
+
 
       hazards.forEach(h => {
         let y = Number(h.dataset.y);
