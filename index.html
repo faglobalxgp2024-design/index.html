@@ -821,11 +821,11 @@ function sfxOver(){
     function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
 
     function setPlayerX(x){
-      const rect = gameRect();
-      const max = rect.width - pSize;
-      px = clamp(Math.round(x), 0, Math.round(max));
-      player.style.left = (px + pSize/2) + "px";
-    }
+  const rect = gameRect();
+  const max = rect.width - pSize;
+  px = clamp(Math.round(x), 0, Math.round(max));
+  player.style.left = px + "px";   // ✅ center 보정 제거
+}
 
     function reset(){
       stop();
