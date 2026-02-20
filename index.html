@@ -155,12 +155,20 @@
     }
     .pill b{ color:var(--txt); }
 
-  .game{
+.game{
   position:relative;
   width:100%;
   aspect-ratio: 3 / 4;
   max-height: 80vh;
   overflow:hidden;
+
+  background: linear-gradient(180deg, #1b1f3a 0%, #0f1224 100%);
+  box-shadow: inset 0 0 60px rgba(255,120,40,0.15);
+  border:2px solid var(--line);
+  border-radius:12px;
+
+  image-rendering: pixelated;
+  touch-action: none;
 }
 
 @media (max-width: 600px){
