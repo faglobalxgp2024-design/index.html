@@ -448,6 +448,15 @@
     const startBtn = document.getElementById("startBtn");
     const restartBtn = document.getElementById("restartBtn");
     const hardBtn = document.getElementById("hardBtn");
+    
+    // ===== 사운드 =====
+const sndCoin = new Audio("https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3");
+const sndStart = new Audio("https://assets.mixkit.co/active_storage/sfx/270/270-preview.mp3");
+const sndGameOver = new Audio("https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3");
+
+sndCoin.volume = 0.4;
+sndStart.volume = 0.5;
+sndGameOver.volume = 0.6;
 
     const timeEl = document.getElementById("time");
     const scoreEl = document.getElementById("score");
@@ -595,6 +604,8 @@ speedMultiplier = 1 + progress; // 최대 2배
         c.style.top = Math.round(y) + "px";
         if (y > rect.height + 40) c.remove();
         else if (hit(player, c)) {
+          sndCoin.currentTime = 0;
+          sndCoin.play();
           c.remove();
           score += 1;
           scoreEl.textContent = score;
@@ -612,6 +623,9 @@ speedMultiplier = 1 + progress; // 최대 2배
     let startAt = 0;
 
     function start(){
+      sndStart.currentTime = 0;
+      sndStart.play();
+      
       reset(); // clean
       hideOverlay();
       running = true;
@@ -638,6 +652,9 @@ speedMultiplier = 1 + progress; // 최대 2배
     function gameOver(){
       if (!running) return;
       stop();
+
+      sndGameOver.currentTime = 0;
+      sndGameOver.play();
 
       // 기록 업데이트(생존시간+코인점수 느낌: 점수에 시간 보너스)
       const lived = (performance.now() - startAt) / 1000;
