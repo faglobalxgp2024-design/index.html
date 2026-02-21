@@ -416,6 +416,41 @@
       from{ transform: translateY(0); opacity:1; }
       to{ transform: translateY(-18px); opacity:0; }
     }
+    /* 터치 유도 표시 */
+.touchHint{
+  position:absolute;
+  left:0;
+  top:0;
+  transform: translate(-50%, 0);
+  pointer-events:none;
+  display:none;
+  text-align:center;
+  z-index:5;
+  filter: drop-shadow(0 6px 10px rgba(0,0,0,.35));
+}
+
+.touchHint .hintHand{
+  font-size:18px;
+  animation: hintBob .9s ease-in-out infinite;
+}
+
+.touchHint .hintArrow{
+  font-size:14px;
+  opacity:.9;
+  animation: hintBob 1.1s ease-in-out infinite;
+}
+
+.touchHint .hintText{
+  margin-top:4px;
+  font-size:8px;
+  color: var(--warn);
+  text-shadow: 2px 2px 0 rgba(0,0,0,.45);
+}
+
+@keyframes hintBob{
+  0%,100%{ transform: translateY(0); }
+  50%{ transform: translateY(6px); }
+}
   </style>
 </head>
 <body>
@@ -482,6 +517,11 @@
     </g>
   </svg>
 </div>
+        <div class="touchHint" id="touchHint" aria-hidden="true">
+  <div class="hintHand">👇</div>
+  <div class="hintArrow">⬇️</div>
+  <div class="hintText">여기 터치</div>
+</div>
 
         <div class="overlay" id="overlay">
           <div class="panel">
@@ -512,6 +552,7 @@
     const startBtn = document.getElementById("startBtn");
     const restartBtn = document.getElementById("restartBtn");
     const hardBtn = document.getElementById("hardBtn");    
+    const touchHint = document.getElementById("touchHint");
 // ===== 폭발 이펙트 함수 (여기에 추가!!) =====
 function spawnExplosionAt(el){
   const gr = game.getBoundingClientRect();
@@ -822,7 +863,21 @@ const pSize = isMobile ? 52 : 40;
   px = clamp(Math.round(x), 0, Math.round(max));
   player.style.left = px + "px";   // ✅ center 보정 제거
 }
+function positionTouchHint(){
+  const pr = player.getBoundingClientRect();
+  const gr = game.getBoundingClientRect();
 
+  const cx = (pr.left + pr.right) / 2 - gr.left;
+  const y  = (pr.bottom - gr.top) + 8;
+
+  touchHint.style.left = Math.round(cx) + "px";
+  touchHint.style.top  = Math.round(y) + "px";
+}
+
+function showTouchHint(show){
+  touchHint.style.display = show ? "block" : "none";
+  if (show) positionTouchHint();
+}
     function reset(){
       stop();
       // 제거
@@ -835,7 +890,8 @@ const pSize = isMobile ? 52 : 40;
       // 플레이어 중앙
       const rect = gameRect();
       setPlayerX(rect.width/2 - pSize/2);
-      player.style.top = Math.round(rect.height * 0.80) + "px";
+      player.style.top = Math.round(rect.height * 0.74) + "px";
+      showTouchHint(true);
 
       showOverlay("시작 준비!", "빨간 장애물을 피하면서<br/>노란 코인을 먹어 점수를 올리세요.", "START");
     }
@@ -958,6 +1014,7 @@ function start(){
   startBGM(); // ⭐ 초기화 후 BGM
 
   hideOverlay();
+  showTouchHint(false);
   running = true;
 
   startAt = performance.now();
@@ -1070,9 +1127,10 @@ startBtn.addEventListener("click", () => {
 
     // 처음 로드 시 중앙 배치
     window.addEventListener("resize", () => {
-      const rect = gameRect();
-      setPlayerX(rect.width/2 - pSize/2);
-    });
+  const rect = gameRect();
+  setPlayerX(rect.width/2 - pSize/2);
+  positionTouchHint();
+});
 
     reset();
   </script>
