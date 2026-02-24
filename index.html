@@ -1109,6 +1109,11 @@
 
 // === 제트기 이미지 적용 ===
 (function applyJetImage(){
+  const jetSprite = document.getElementById("jetSprite");
+  if (!jetSprite) {
+    console.error("❌ #jetSprite 요소가 없음 (HTML에 id='jetSprite' 확인)");
+    return;
+  }
   jetSprite.style.backgroundImage =
     'url("https://raw.githubusercontent.com/faglobalxgp2024-design/index.html/main/%EA%B2%8C%EC%9E%84%EC%A1%B4.png")';
 })();
