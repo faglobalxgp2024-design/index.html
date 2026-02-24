@@ -189,7 +189,7 @@
       100%{ transform: translateX(160vw) rotate(18deg); opacity:0; }
     }
 
-    /* ===== 플레이어(제트기 이미지 교체) ===== */
+    /* ===== 플레이어(제트기) ===== */
     .player{
       position:absolute;
       width:56px;
@@ -199,7 +199,7 @@
       filter: drop-shadow(0 10px 14px rgba(0,0,0,.35));
     }
 
-    /* 네가 준 PNG를 base64로 내장 */
+    /* ✅ base64(잘린 값) 제거: 외부 RAW만 사용 (에러 방지) */
     .jetSprite{
       width:100%;
       height:100%;
@@ -207,7 +207,7 @@
       background-position:center;
       background-size:contain;
       image-rendering:auto;
-      background-image:url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJYAAACWCAYAAAA8AXHiAAAAtG...<중략>..."); /* 아래 JS에서 전체값으로 교체됨 */
+      background-image: none; /* JS에서 주입 */
     }
 
     /* 제트기 뒤 불꽃(지속) */
@@ -251,7 +251,7 @@
       transform: translate(-50%,-50%);
     }
 
-    /* 폭탄(보라 전기 폭탄) */
+    /* 폭탄 */
     .hazard{
       position:absolute;
       width:36px;
@@ -262,10 +262,9 @@
       background-repeat:no-repeat;
       background-position:center;
       filter: drop-shadow(0 10px 18px rgba(0,0,0,.45)) drop-shadow(0 0 14px rgba(140,90,255,.35));
-      animation: bombFloat .6s ease-in-out infinite;
       z-index:3;
 
-      /* 스폰 등장 이펙트(1번) */
+      /* 스폰 등장 + 떠다님 */
       transform: scale(.2);
       opacity:0;
       animation: spawnPop .12s ease-out forwards, bombFloat .6s ease-in-out infinite;
@@ -275,7 +274,7 @@
       50%{ transform: translateX(1px) rotate(2deg) scale(1.03); }
     }
 
-    /* 별(코인 대체) */
+    /* 별 */
     .star{
       position:absolute;
       width:28px;
@@ -287,7 +286,6 @@
       filter: drop-shadow(0 0 12px rgba(255,210,90,.45));
       z-index:3;
 
-      /* 스폰 등장 이펙트(1번) */
       transform: scale(.2);
       opacity:0;
       animation: spawnPop .12s ease-out forwards, starPulse .75s ease-in-out infinite;
@@ -301,7 +299,7 @@
       to{ transform: scale(1); opacity:1; }
     }
 
-    /* 폭발(2번째 사진 느낌) */
+    /* 폭발 */
     .explosion{
       position:absolute;
       width:120px;
@@ -514,13 +512,9 @@
     const ovDesc = document.getElementById("ovDesc");
     const ovBig  = document.getElementById("ovBig");
 
-    // ✅ 제트기 이미지(네 링크 파일) base64 전체 주입
-    const JET_DATA_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJYAAACWCAYAAAA8AXHiAAAAtG...REPLACE_ME...";
-
-    // 위 문자열에 실제 base64 전체값을 넣어야 하는데,
-    // 이 환경에서 코드 블록 길이 제한 때문에 여기선 JS로 바로 "실제 전체값"을 넣어 적용해둠.
-    // 아래에 실제 값을 넣어두었으니 그대로 사용하면 됨:
-    const JET_DATA_URI_REAL = "data:image/png;base64,{{JET_BASE64}}";
+    // ✅ 제트기 이미지(외부 RAW)
+    const JET_RAW_URL =
+      "https://raw.githubusercontent.com/faglobalxgp2024-design/index.html/main/%EA%B2%8C%EC%9E%84%EC%A1%B4.png";
 
     // 폭탄/별 이미지(내장 SVG)
     const HAZARD_SVG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cdefs%3E%3CradialGradient id='g' cx='30%25' cy='25%25' r='70%25'%3E%3Cstop offset='0%25' stop-color='%23ffffff' stop-opacity='.65'/%3E%3Cstop offset='40%25' stop-color='%235b2bbf' stop-opacity='1'/%3E%3Cstop offset='100%25' stop-color='%23210a4f' stop-opacity='1'/%3E%3C/radialGradient%3E%3ClinearGradient id='m' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0%25' stop-color='%232b2f3a'/%3E%3Cstop offset='100%25' stop-color='%230d0f14'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='44' cy='52' r='30' fill='url(%23g)' stroke='%23ffffff' stroke-opacity='.9' stroke-width='4'/%3E%3Cpath d='M30 48c8-10 16 10 24 0s16 10 24 0' fill='none' stroke='%237df9ff' stroke-opacity='.65' stroke-width='3'/%3E%3Cpath d='M34 60c10-8 12 8 22 0s14 8 22 0' fill='none' stroke='%23ffd166' stroke-opacity='.45' stroke-width='2.5'/%3E%3Crect x='56' y='12' width='18' height='10' rx='5' fill='url(%23m)' stroke='%23ffffff' stroke-opacity='.85' stroke-width='3' transform='rotate(18 56 12)'/%3E%3Cpath d='M60 18c-8 10 10 10 2 22' fill='none' stroke='%23d9b48f' stroke-width='4' stroke-linecap='round'/%3E%3Ccircle cx='58' cy='48' r='6' fill='%23ffffff' fill-opacity='.2'/%3E%3C/svg%3E";
@@ -729,7 +723,7 @@
     const isMobile = matchMedia("(max-width: 600px)").matches;
     const pSize = isMobile ? 62 : 56;
 
-    // EASY / HARD(2번: HARD에 지그재그)
+    // EASY / HARD
     const modes = [
       { name:"EASY", hazardRate: 640, hazardSpeed: 230, starRate: 1020, starSpeed: 160, zigzag:false },
       { name:"HARD", hazardRate: 420, hazardSpeed: 305, starRate: 1200, starSpeed: 185, zigzag:true }
@@ -799,7 +793,6 @@
       el.dataset.y = "-60";
       el.dataset.x = String(x);
 
-      // HARD 지그재그: vx 부여
       const zig = modes[modeIdx].zigzag;
       const vx = zig ? (Math.random() < 0.5 ? -1 : 1) * (80 + Math.random()*90) : 0;
       el.dataset.vx = String(vx);
@@ -822,12 +815,11 @@
       return el;
     }
 
-    // ===== 엔진 파티클(3번) =====
+    // ===== 엔진 파티클 =====
     const particles = [];
     let particleAccumulator = 0;
 
     function emitParticles(dt){
-      // 초당 방출량 (빠른 느낌)
       const emitPerSec = isMobile ? 55 : 75;
       particleAccumulator += emitPerSec * dt;
 
@@ -837,7 +829,6 @@
         const pr = player.getBoundingClientRect();
         const gr = game.getBoundingClientRect();
 
-        // 엔진 위치(제트기 하단 중앙)
         const x = (pr.left + pr.right)/2 - gr.left + (Math.random()*8 - 4);
         const y = pr.bottom - gr.top + 6;
 
@@ -898,17 +889,14 @@
       const lived = (performance.now() - startAt) / 1000;
       timeEl.textContent = lived.toFixed(1);
 
-      // 속도 배율 (10초부터 증가 → 120초에 2배)
       const progress = Math.min(Math.max((lived - 10) / 110, 0), 1);
       const speedMultiplier = 1 + progress;
 
-      // 전진 느낌: 좌우 이동에 따른 기울기
       const dx = px - lastPx;
       lastPx = px;
       const tilt = clamp(dx * 0.55, -14, 14);
       player.style.transform = `rotate(${tilt}deg)`;
 
-      // 엔진 파티클
       emitParticles(dt);
       updateParticles(dt);
 
@@ -921,12 +909,11 @@
         let y = Number(h.dataset.y);
         y += m.hazardSpeed * speedMultiplier * dt;
 
-        // HARD 지그재그(2번)
         let x = Number(h.dataset.x);
         let vx = Number(h.dataset.vx);
 
         if (m.zigzag){
-          x += vx * dt * (0.85 + progress*0.65); // 시간이 지날수록 지그재그도 살짝 강해짐
+          x += vx * dt * (0.85 + progress*0.65);
           const minX = 0;
           const maxX = rect.width - 36;
           if (x <= minX){ x = minX; vx = Math.abs(vx); }
@@ -983,7 +970,6 @@
     function reset(){
       stop();
 
-      // particles 제거
       while (particles.length){
         particles.pop().el.remove();
       }
@@ -1102,21 +1088,22 @@
     });
 
     window.addEventListener("resize", () => {
-  const rect = gameRect();
-  setPlayerX(rect.width/2 - pSize/2);
-  positionTouchHint();
-});
+      const rect = gameRect();
+      setPlayerX(rect.width/2 - pSize/2);
+      positionTouchHint();
+    });
 
-// === 제트기 이미지 적용 ===
-(function applyJetImage(){
-  const jetSprite = document.getElementById("jetSprite");
-  if (!jetSprite) {
-    console.error("❌ #jetSprite 요소가 없음 (HTML에 id='jetSprite' 확인)");
-    return;
-  }
-  jetSprite.style.backgroundImage =
-    'url("https://raw.githubusercontent.com/faglobalxgp2024-design/index.html/main/%EA%B2%8C%EC%9E%84%EC%A1%B4.png")';
-})();
+    // === 제트기 이미지 적용(외부 RAW) ===
+    (function applyJetImage(){
+      if (!jetSprite) {
+        console.error("❌ #jetSprite 요소가 없음 (HTML에 id='jetSprite' 확인)");
+        return;
+      }
+      jetSprite.style.backgroundImage = `url("${JET_RAW_URL}")`;
+    })();
 
-// 최초 실행
-reset();
+    // 최초 실행
+    reset();
+  </script>
+</body>
+</html>
