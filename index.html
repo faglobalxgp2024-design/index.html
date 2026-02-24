@@ -35,7 +35,6 @@
       justify-content:center;
       padding:16px;
 
-      /* 포스터 느낌 배경(텍스트 없음) */
       background:
         radial-gradient( circle at 15% 20%, rgba(255,255,255,.18), transparent 35% ),
         radial-gradient( circle at 85% 35%, rgba(255,120,60,.20), transparent 42% ),
@@ -113,7 +112,6 @@
     }
     .pill b{ color:var(--txt); }
 
-    /* ===== 게임 영역(우주) ===== */
     .game{
       position:relative;
       width:100%;
@@ -133,7 +131,6 @@
       touch-action:none;
     }
 
-    /* 별 배경 레이어 */
     .spaceLayer{
       position:absolute; inset:0;
       pointer-events:none;
@@ -199,7 +196,6 @@
       filter: drop-shadow(0 10px 14px rgba(0,0,0,.35));
     }
 
-    /* ✅ base64(잘린 값) 제거: 외부 RAW만 사용 (에러 방지) */
     .jetSprite{
       width:100%;
       height:100%;
@@ -207,34 +203,48 @@
       background-position:center;
       background-size:contain;
       image-rendering:auto;
-      background-image: none; /* JS에서 주입 */
+      background-image: none;
     }
 
-    /* 제트기 뒤 불꽃(지속) */
+    /* ✅ 불꽃 크기 대폭 축소 + 고퀄리티(짧고 타이트하게) */
     .player::before{
       content:"";
       position:absolute;
       left:50%;
-      bottom:-10px;
-      width:22px;
-      height:30px;
+      bottom:-6px;              /* 기존 -10px -> 더 덜 내려오게 */
+      width:12px;               /* 기존 22px -> 약 절반 */
+      height:16px;              /* 기존 30px -> 약 절반 */
       transform: translateX(-50%);
       background:
-        radial-gradient(circle at 50% 10%, rgba(255,255,255,.6) 0 18%, transparent 19%),
-        radial-gradient(circle at 50% 40%, rgba(255,209,102,.95) 0 40%, transparent 41%),
-        radial-gradient(circle at 50% 70%, rgba(255,106,61,.95) 0 70%, transparent 71%);
-      filter: drop-shadow(0 0 12px rgba(255,170,60,.55));
+        radial-gradient(circle at 50% 8%, rgba(255,255,255,.55) 0 20%, transparent 21%),
+        radial-gradient(circle at 50% 42%, rgba(255,209,102,.92) 0 52%, transparent 53%),
+        radial-gradient(circle at 50% 78%, rgba(255,106,61,.92) 0 78%, transparent 79%);
+      filter:
+        drop-shadow(0 0 7px rgba(255,170,60,.45))
+        drop-shadow(0 0 10px rgba(255,120,40,.18));
       border-radius: 999px;
-      opacity:.9;
-      animation: flameFlicker .12s infinite alternate;
+      opacity:.85;
+      animation: flameFlicker .11s infinite alternate;
       pointer-events:none;
     }
     @keyframes flameFlicker{
-      from{ transform: translateX(-50%) scaleY(.92) translateY(0); opacity:.80; }
-      to{ transform: translateX(-50%) scaleY(1.15) translateY(1px); opacity:1; }
+      from{
+        transform: translateX(-50%) scaleY(.92) scaleX(.98) translateY(0);
+        opacity:.72;
+        filter:
+          drop-shadow(0 0 6px rgba(255,170,60,.38))
+          drop-shadow(0 0 9px rgba(255,120,40,.14));
+      }
+      to{
+        transform: translateX(-50%) scaleY(1.12) scaleX(1.02) translateY(1px);
+        opacity:.92;
+        filter:
+          drop-shadow(0 0 8px rgba(255,170,60,.48))
+          drop-shadow(0 0 12px rgba(255,120,40,.18));
+      }
     }
 
-    /* 엔진 파티클 */
+    /* 엔진 파티클(연기/뿜는 느낌) */
     .particle{
       position:absolute;
       width:6px;
@@ -251,7 +261,6 @@
       transform: translate(-50%,-50%);
     }
 
-    /* 폭탄 */
     .hazard{
       position:absolute;
       width:36px;
@@ -264,7 +273,6 @@
       filter: drop-shadow(0 10px 18px rgba(0,0,0,.45)) drop-shadow(0 0 14px rgba(140,90,255,.35));
       z-index:3;
 
-      /* 스폰 등장 + 떠다님 */
       transform: scale(.2);
       opacity:0;
       animation: spawnPop .12s ease-out forwards, bombFloat .6s ease-in-out infinite;
@@ -274,7 +282,6 @@
       50%{ transform: translateX(1px) rotate(2deg) scale(1.03); }
     }
 
-    /* 별 */
     .star{
       position:absolute;
       width:28px;
@@ -299,7 +306,6 @@
       to{ transform: scale(1); opacity:1; }
     }
 
-    /* 폭발 */
     .explosion{
       position:absolute;
       width:120px;
@@ -512,16 +518,13 @@
     const ovDesc = document.getElementById("ovDesc");
     const ovBig  = document.getElementById("ovBig");
 
-    // ✅ 제트기 이미지(외부 RAW)
     const JET_RAW_URL =
       "https://raw.githubusercontent.com/faglobalxgp2024-design/index.html/main/%EA%B2%8C%EC%9E%84%EC%A1%B4.png";
 
-    // 폭탄/별 이미지(내장 SVG)
     const HAZARD_SVG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cdefs%3E%3CradialGradient id='g' cx='30%25' cy='25%25' r='70%25'%3E%3Cstop offset='0%25' stop-color='%23ffffff' stop-opacity='.65'/%3E%3Cstop offset='40%25' stop-color='%235b2bbf' stop-opacity='1'/%3E%3Cstop offset='100%25' stop-color='%23210a4f' stop-opacity='1'/%3E%3C/radialGradient%3E%3ClinearGradient id='m' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0%25' stop-color='%232b2f3a'/%3E%3Cstop offset='100%25' stop-color='%230d0f14'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='44' cy='52' r='30' fill='url(%23g)' stroke='%23ffffff' stroke-opacity='.9' stroke-width='4'/%3E%3Cpath d='M30 48c8-10 16 10 24 0s16 10 24 0' fill='none' stroke='%237df9ff' stroke-opacity='.65' stroke-width='3'/%3E%3Cpath d='M34 60c10-8 12 8 22 0s14 8 22 0' fill='none' stroke='%23ffd166' stroke-opacity='.45' stroke-width='2.5'/%3E%3Crect x='56' y='12' width='18' height='10' rx='5' fill='url(%23m)' stroke='%23ffffff' stroke-opacity='.85' stroke-width='3' transform='rotate(18 56 12)'/%3E%3Cpath d='M60 18c-8 10 10 10 2 22' fill='none' stroke='%23d9b48f' stroke-width='4' stroke-linecap='round'/%3E%3Ccircle cx='58' cy='48' r='6' fill='%23ffffff' fill-opacity='.2'/%3E%3C/svg%3E";
 
     const STAR_SVG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cdefs%3E%3CradialGradient id='s' cx='50%25' cy='35%25' r='70%25'%3E%3Cstop offset='0%25' stop-color='%23fff4b3'/%3E%3Cstop offset='55%25' stop-color='%23ffd166'/%3E%3Cstop offset='100%25' stop-color='%23ff9a3c'/%3E%3C/radialGradient%3E%3C/defs%3E%3Cpath d='M48 6l11 24 26 3-19 18 5 26-23-13-23 13 5-26L11 33l26-3z' fill='url(%23s)' stroke='%23ffffff' stroke-opacity='.85' stroke-width='3'/%3E%3Cpath d='M48 18l7 15 16 2-12 11 3 16-14-8-14 8 3-16-12-11 16-2z' fill='%23ffffff' fill-opacity='.16'/%3E%3C/svg%3E";
 
-    // ===== 폭발 =====
     function spawnExplosionAt(el){
       const gr = game.getBoundingClientRect();
       const r = el.getBoundingClientRect();
@@ -538,7 +541,6 @@
       setTimeout(() => ex.remove(), 520);
     }
 
-    // ===== 오디오 =====
     let audioCtx = null;
     let audioReady = null;
 
@@ -711,7 +713,6 @@
       }).catch(()=>{});
     }
 
-    // ===== 상태 =====
     let running = false;
     let t0 = 0;
     let raf = null;
@@ -723,7 +724,6 @@
     const isMobile = matchMedia("(max-width: 600px)").matches;
     const pSize = isMobile ? 62 : 56;
 
-    // EASY / HARD
     const modes = [
       { name:"EASY", hazardRate: 640, hazardSpeed: 230, starRate: 1020, starSpeed: 160, zigzag:false },
       { name:"HARD", hazardRate: 420, hazardSpeed: 305, starRate: 1200, starSpeed: 185, zigzag:true }
@@ -780,7 +780,6 @@
       setTimeout(()=> el.remove(), 750);
     }
 
-    // ===== 스폰 =====
     function spawnHazard(){
       const rect = gameRect();
       const el = document.createElement("div");
@@ -815,7 +814,6 @@
       return el;
     }
 
-    // ===== 엔진 파티클 =====
     const particles = [];
     let particleAccumulator = 0;
 
@@ -876,7 +874,6 @@
       }
     }
 
-    // ===== 게임 루프 =====
     let hazardTimer = null;
     let starTimer = null;
     let startAt = 0;
@@ -1036,7 +1033,6 @@
       startBtn.textContent = "다시 시작";
     }
 
-    // 입력(키보드)
     const keyState = { left:false, right:false };
     function moveBy(dx){ setPlayerX(px + dx); }
 
@@ -1059,7 +1055,6 @@
     }
     requestAnimationFrame(controlLoop);
 
-    // 입력(모바일 드래그)
     let dragging = false;
     function pointerX(e){
       const rect = gameRect();
@@ -1076,7 +1071,6 @@
     game.addEventListener("touchmove", (e)=>{ if(dragging) setPlayerX(pointerX(e)); }, {passive:false});
     game.addEventListener("touchend", ()=> dragging = false);
 
-    // 버튼
     startBtn.addEventListener("click", () => {
       ensureAudioReady().then(() => { sfxStart(); start(); }).catch(() => start());
     });
@@ -1093,7 +1087,6 @@
       positionTouchHint();
     });
 
-    // === 제트기 이미지 적용(외부 RAW) ===
     (function applyJetImage(){
       if (!jetSprite) {
         console.error("❌ #jetSprite 요소가 없음 (HTML에 id='jetSprite' 확인)");
@@ -1102,7 +1095,6 @@
       jetSprite.style.backgroundImage = `url("${JET_RAW_URL}")`;
     })();
 
-    // 최초 실행
     reset();
   </script>
 </body>
