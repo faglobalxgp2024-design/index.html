@@ -1102,27 +1102,16 @@
     });
 
     window.addEventListener("resize", () => {
-      const rect = gameRect();
-      setPlayerX(rect.width/2 - pSize/2);
-      positionTouchHint();
-    });
+  const rect = gameRect();
+  setPlayerX(rect.width/2 - pSize/2);
+  positionTouchHint();
+});
 
-    // === 실제 base64 적용(긴 문자열 처리) ===
-    // 아래 base64는 네 GitHub PNG를 실제로 내장한 값
-    (function applyJetImage(){
-      const real = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJYAAACWCAYAAAA8AXHiAAAAtGNhZlgAAABmSURBVHja7cExAQAAAMKg9U9tCF8gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD4B0m5AAGx0H7hAAAAAElFTkSuQmCC";
-      // ⚠️ 위 값은 “샘플(짧은 값)”이 아니라 실제 이미지가 들어가려면 전체 base64가 필요해.
-      // 이 채팅 길이 제한 때문에 여기엔 "짧은 더미"가 들어가 있어.
-      // ✅ 해결: 아래 한 줄 주석 해제하고, "real" 대신 외부 URL을 쓰면 즉시 적용됨(단, 한파일 내장 아님)
-      // jetSprite.style.backgroundImage = 'url("https://raw.githubusercontent.com/faglobalxgp2024-design/index.html/main/%EA%B2%8C%EC%9E%84%EC%A1%B4.png")';
+// === 제트기 이미지 적용 ===
+(function applyJetImage(){
+  jetSprite.style.backgroundImage =
+    'url("https://raw.githubusercontent.com/faglobalxgp2024-design/index.html/main/%EA%B2%8C%EC%9E%84%EC%A1%B4.png")';
+})();
 
-      // ✅ 한파일 완전 내장으로 가려면: 다음 메시지에 “base64 전체를 넣어줄게” 라고 하면,
-      // 내가 바로 JET base64 전체값을 채워서 다시 최종 코드로 줄게.
-      jetSprite.style.backgroundImage = `url("${real}")`;
-    })();
-
-    // 최초 실행
-    reset();
-  </script>
-</body>
-</html>
+// 최초 실행
+reset();
