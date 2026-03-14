@@ -132,13 +132,29 @@
   let bgmTimer = null;
   let bgmStep = 0;
   const BGM_NOTES = {
-    C4:261.63, D4:293.66, E4:329.63, G4:392.00, A4:440.00,
+    C4:261.63, D4:293.66, E4:329.63, F4:349.23, G4:392.00, A4:440.00, B4:493.88,
     C5:523.25, D5:587.33, E5:659.25, G5:783.99, A5:880.00
   };
-  const bgmLead = ["E5", null, "G5", null, "A5", null, "G5", null, "E5", null, "D5", null, "C5", null, "D5", null];
-  const bgmBass = ["C4", null, null, null, "A4", null, null, null, "G4", null, null, null, "D4", null, null, null];
+  const bgmLead = [
+    "E5", null, "G5", "A5",  "G5", null, "E5", null,
+    "D5", null, "E5", "G5",  "A5", null, "G5", null,
+    "E5", null, "G5", "A5",  "C5", null, "D5", null,
+    "E5", "G5", "A5", "G5",  "E5", null, "D5", null
+  ];
+  const bgmBass = [
+    "C4", null, null, null,   "A4", null, null, null,
+    "F4", null, null, null,   "G4", null, null, null,
+    "C4", null, null, null,   "A4", null, null, null,
+    "F4", null, null, null,   "G4", null, null, null
+  ];
+  const bgmChime = [
+    null, "E4", null, null,   null, "E4", null, "G4",
+    null, "D4", null, null,   null, "D4", null, "G4",
+    null, "E4", null, null,   null, "E4", null, "A4",
+    null, "G4", null, null,   null, "E4", null, "D4"
+  ];
 
-  function bgmTone(freq, dur = 0.18, type = "triangle", vol = 0.018) {
+  function bgmTone(freq, dur = 0.16, type = "triangle", vol = 0.018) {
     if (!audioCtx || audioCtx.state !== "running" || !bgmEnabled) return;
     const t = audioCtx.currentTime;
     const osc = audioCtx.createOscillator();
@@ -146,7 +162,7 @@
     osc.type = type;
     osc.frequency.setValueAtTime(freq, t);
     gain.gain.setValueAtTime(0.0001, t);
-    gain.gain.exponentialRampToValueAtTime(vol, t + 0.02);
+    gain.gain.exponentialRampToValueAtTime(vol, t + 0.01);
     gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     osc.connect(gain);
     gain.connect(audioCtx.destination);
@@ -154,15 +170,51 @@
     osc.stop(t + dur + 0.03);
   }
 
+  function bgmKick() {
+    if (!audioCtx || audioCtx.state !== "running" || !bgmEnabled) return;
+    const t = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(140, t);
+    osc.frequency.exponentialRampToValueAtTime(55, t + 0.09);
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(0.03, t + 0.005);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(t);
+    osc.stop(t + 0.1);
+  }
+
+  function bgmHat() {
+    if (!audioCtx || audioCtx.state !== "running" || !bgmEnabled) return;
+    const t = audioCtx.currentTime;
+    const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.03, audioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+    const src = audioCtx.createBufferSource();
+    const gain = audioCtx.createGain();
+    src.buffer = buffer;
+    gain.gain.value = 0.01;
+    src.connect(gain);
+    gain.connect(audioCtx.destination);
+    src.start(t);
+  }
+
   function bgmTick() {
     if (!bgmEnabled) return;
-    const i = bgmStep % 16;
+    const i = bgmStep % 32;
     const lead = bgmLead[i];
     const bass = bgmBass[i];
-    if (lead) bgmTone(BGM_NOTES[lead], 0.16, "triangle", 0.018);
-    if (bass) bgmTone(BGM_NOTES[bass], 0.22, "sine", 0.014);
+    const chime = bgmChime[i];
+    if (i % 8 === 0) bgmKick();
+    if (i % 4 === 2) bgmHat();
+    if (lead) bgmTone(BGM_NOTES[lead], 0.13, "triangle", 0.022);
+    if (bass) bgmTone(BGM_NOTES[bass], 0.20, "sine", 0.015);
+    if (chime) bgmTone(BGM_NOTES[chime], 0.09, "square", 0.012);
     bgmStep++;
-    bgmTimer = setTimeout(bgmTick, 240);
+    bgmTimer = setTimeout(bgmTick, 170);
   }
 
   function startBGM() {
@@ -199,11 +251,16 @@
   function circleHit(a, b) { return distance(a.x, a.y, b.x, b.y) <= (a.r + b.r); }
 
   function getRankBonusPercent() {
-    return save.level * 0.5;
+    return Math.max(0, (save.level - 1) * 0.5);
   }
 
   function getYellowRankGain() {
-    return 1 + (getRankBonusPercent() / 100);
+    return (1000 + Math.max(0, save.level - 1) * 5) / 1000;
+  }
+
+  function formatGain(value) {
+    if (Number.isInteger(value)) return String(value);
+    return value.toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
   }
 
   function getUpgradeCost() {
@@ -1050,7 +1107,7 @@
         const gain = getYellowRankGain();
         run.rankPoint += gain;
         emitParticles(s.x, s.y, "#ffd84a", 14, 0.7);
-        addPopup(s.x, s.y, `+${gain.toFixed(2)} RANK`, "#ffd84a");
+        addPopup(s.x, s.y, `+${formatGain(gain)} RANK`, "#ffd84a");
         sfxPickup();
         yellowStars.splice(i, 1);
         updateHUD();
