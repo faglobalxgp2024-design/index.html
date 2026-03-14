@@ -95,6 +95,38 @@
   let pointerActive = false;
   let pointerOffsetX = 0;
 
+  const powerups = [];
+  let shieldTimer = 0;
+  let magnetTimer = 0;
+  let reviveUsedThisRun = false;
+
+  let audioCtx = null;
+  function ensureAudio() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state !== "running") audioCtx.resume().catch(() => {});
+  }
+  function tone(freq = 440, dur = 0.08, type = "triangle", vol = 0.035, endFreq = null) {
+    if (!audioCtx || audioCtx.state !== "running") return;
+    const t = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t);
+    if (endFreq) osc.frequency.exponentialRampToValueAtTime(Math.max(50, endFreq), t + dur);
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(vol, t + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(t);
+    osc.stop(t + dur + 0.02);
+  }
+  function sfxPickup() { tone(820, 0.05, "triangle", 0.04, 1220); }
+  function sfxPower() { tone(640, 0.07, "square", 0.04); setTimeout(() => tone(920, 0.08, "triangle", 0.035), 55); }
+  function sfxLevel() { tone(520, 0.07, "square", 0.04); setTimeout(() => tone(780, 0.09, "square", 0.04), 75); }
+  function sfxDeath() { tone(180, 0.1, "sawtooth", 0.05, 90); setTimeout(() => tone(120, 0.12, "square", 0.04, 60), 80); }
+  function sfxRevive() { tone(420, 0.08, "triangle", 0.04); setTimeout(() => tone(620, 0.1, "triangle", 0.04), 60); }
+
   function showToast(msg) {
     toast.textContent = msg;
     toast.classList.add("show");
@@ -167,6 +199,23 @@
   }
 
   function spawnHazard() {
+    const roll = Math.random();
+    if (roll < 0.12) {
+      hazards.push({
+        type: "blackhole",
+        x: rand(38, W - 38),
+        y: -68,
+        r: 24,
+        visualR: 34,
+        speed: rand(150, 190) + Math.min(70, timeAlive * 1.2),
+        rot: rand(0, Math.PI * 2),
+        spin: rand(-1.5, 1.5),
+        pullRadius: 170,
+        pullForce: 110,
+      });
+      return;
+    }
+
     const type = Math.random() < 0.62 ? "meteor" : "planet";
     if (type === "meteor") {
       hazards.push({
@@ -192,6 +241,18 @@
         hue: Math.random() < 0.5 ? "purple" : "blue",
       });
     }
+  }
+
+  function spawnPowerup() {
+    const type = Math.random() < 0.5 ? "shield" : "magnet";
+    powerups.push({
+      type,
+      x: rand(28, W - 28),
+      y: -30,
+      r: 14,
+      speed: rand(185, 220),
+      bob: rand(0, Math.PI * 2),
+    });
   }
 
   function spawnFallingStar() {
@@ -420,6 +481,76 @@
     ctx.restore();
   }
 
+
+  function drawBlackHole(h, now) {
+    ctx.save();
+    ctx.translate(h.x, h.y);
+    ctx.rotate(h.rot);
+
+    const g = ctx.createRadialGradient(0, 0, 3, 0, 0, h.visualR + 10);
+    g.addColorStop(0, "#000000");
+    g.addColorStop(0.28, "#13051e");
+    g.addColorStop(0.55, "#4f0c70");
+    g.addColorStop(0.78, "#6f31bf");
+    g.addColorStop(1, "rgba(111,49,191,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(0, 0, h.visualR + 8, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = "rgba(178,93,255,.85)";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, h.visualR + 8, 15, 0.2 + Math.sin(now * 0.002) * 0.15, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = "#030208";
+    ctx.beginPath();
+    ctx.arc(0, 0, h.visualR * 0.68, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  function drawPowerup(p, now) {
+    ctx.save();
+    ctx.translate(p.x, p.y + Math.sin(now * 0.005 + p.bob) * 4);
+
+    if (p.type === "shield") {
+      const g = ctx.createRadialGradient(0, 0, 1, 0, 0, 18);
+      g.addColorStop(0, "#eafff4");
+      g.addColorStop(0.55, "#49ffb7");
+      g.addColorStop(1, "#0d8e67");
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(0, 0, 14, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,.8)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0, 0, 8, Math.PI * 0.95, Math.PI * 0.05, true);
+      ctx.stroke();
+    } else {
+      const g = ctx.createRadialGradient(0, 0, 1, 0, 0, 18);
+      g.addColorStop(0, "#fff9d9");
+      g.addColorStop(0.55, "#ffd84a");
+      g.addColorStop(1, "#b77b10");
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(0, 0, 14, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,.85)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0, 0, 8, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(12, 0); ctx.lineTo(20, 0); ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
   function drawStarObj(s, purple, now) {
     ctx.save();
     ctx.translate(s.x, s.y);
@@ -502,6 +633,10 @@
     if (h.type === "meteor") {
       emitParticles(h.x, h.y, "#ff8d47", 26, 1.2);
       emitParticles(h.x, h.y, "#ffdc7b", 14, 1);
+    } else if (h.type === "blackhole") {
+      emitParticles(h.x, h.y, "#b25dff", 32, 1.25);
+      emitParticles(h.x, h.y, "#4dd6ff", 18, 1.05);
+      emitParticles(h.x, h.y, "#ffffff", 10, 0.85);
     } else {
       emitParticles(h.x, h.y, h.hue === "purple" ? "#b25dff" : "#62bfff", 30, 1.2);
       emitParticles(h.x, h.y, "#ffffff", 10, 0.8);
@@ -512,6 +647,7 @@
     hazards.length = 0;
     yellowStars.length = 0;
     purpleStars.length = 0;
+    powerups.length = 0;
     particles.length = 0;
     popups.length = 0;
     run.rankPoint = 0;
@@ -519,6 +655,9 @@
     spawnHazardTimer = 0;
     spawnStarTimer = 0;
     rankSyncTimer = 0;
+    shieldTimer = 0;
+    magnetTimer = 0;
+    reviveUsedThisRun = false;
     player.x = W * 0.5;
     player.moveX = 0;
     updateHUD();
@@ -592,7 +731,29 @@
     persistSave();
     updateHUD();
     emitParticles(player.x, player.y, "#7dd7ff", 22, 0.8);
+    sfxLevel();
     showToast(`LEVEL UP ${save.level}`);
+  }
+
+  function tryRevive() {
+    if (reviveUsedThisRun) return false;
+    if (save.starCurrency < 50) return false;
+    const ok = window.confirm("Revive for 50 STAR?");
+    if (!ok) return false;
+
+    save.starCurrency -= 50;
+    persistSave();
+    reviveUsedThisRun = true;
+    shieldTimer = 3.5;
+    player.x = W * 0.5;
+    player.moveX = 0;
+    hazards.splice(0, hazards.length);
+    powerups.splice(0, powerups.length);
+    emitParticles(player.x, player.y, "#7dd7ff", 40, 1.2);
+    sfxRevive();
+    updateHUD();
+    showToast("REVIVED -50 STAR");
+    return true;
   }
 
   function endRun() {
@@ -729,6 +890,8 @@
 
   function update(dt) {
     timeAlive += dt;
+    shieldTimer = Math.max(0, shieldTimer - dt);
+    magnetTimer = Math.max(0, magnetTimer - dt);
 
     if (!pointerActive) player.x += player.moveX * player.speed * dt;
     player.x = clamp(player.x, 30, W - 30);
@@ -739,24 +902,71 @@
 
     const hazardInterval = Math.max(0.34, 0.82 - timeAlive * 0.0034);
     const starInterval = 0.43;
+    const powerupInterval = 6.5;
 
     if (spawnHazardTimer >= hazardInterval) { spawnHazardTimer = 0; spawnHazard(); }
     if (spawnStarTimer >= starInterval) { spawnStarTimer = 0; spawnFallingStar(); }
+    if (timeAlive > 2 && Math.floor((timeAlive - dt) / powerupInterval) !== Math.floor(timeAlive / powerupInterval)) spawnPowerup();
     if (rankSyncTimer >= 6) { rankSyncTimer = 0; loadLeaderboard(); }
+
+    if (hazards.length > 42) hazards.shift();
 
     for (let i = hazards.length - 1; i >= 0; i--) {
       const h = hazards[i];
       h.y += h.speed * dt;
       h.rot += h.spin * dt;
-      if (h.y > H + 70) {
+
+      if (h.type === "blackhole") {
+        const dx = h.x - player.x;
+        const dy = h.y - player.y;
+        const dist = Math.max(1, Math.hypot(dx, dy));
+        if (dist < h.pullRadius) {
+          const f = (1 - dist / h.pullRadius) * (h.pullForce * dt);
+          player.x += (dx / dist) * f;
+        }
+      }
+
+      if (h.y > H + 80) {
         hazards.splice(i, 1);
         continue;
       }
+
       if (circleHit(player, h)) {
+        if (shieldTimer > 0) {
+          explodeHazard(h);
+          hazards.splice(i, 1);
+          shieldTimer = 0;
+          sfxPower();
+          showToast("SHIELD BLOCK");
+          continue;
+        }
         explodeHazard(h);
         hazards.splice(i, 1);
+        sfxDeath();
+        if (tryRevive()) continue;
         endRun();
         return;
+      }
+    }
+
+    for (let i = powerups.length - 1; i >= 0; i--) {
+      const p = powerups[i];
+      p.y += p.speed * dt;
+      if (p.y > H + 50) {
+        powerups.splice(i, 1);
+        continue;
+      }
+      if (circleHit(player, p)) {
+        if (p.type === "shield") {
+          shieldTimer = 7;
+          addPopup(p.x, p.y, "SHIELD", "#7dff9b");
+        } else {
+          magnetTimer = 10;
+          addPopup(p.x, p.y, "MAGNET", "#ffe066");
+        }
+        emitParticles(p.x, p.y, p.type === "shield" ? "#7dff9b" : "#ffd84a", 18, 0.9);
+        sfxPower();
+        powerups.splice(i, 1);
       }
     }
 
@@ -764,12 +974,24 @@
       const s = yellowStars[i];
       s.y += s.speed * dt;
       s.rot += s.spin * dt;
+
+      if (magnetTimer > 0) {
+        const dx = player.x - s.x;
+        const dy = player.y - s.y;
+        const dist = Math.max(1, Math.hypot(dx, dy));
+        if (dist < 170) {
+          s.x += (dx / dist) * 360 * dt;
+          s.y += (dy / dist) * 360 * dt;
+        }
+      }
+
       if (s.y > H + 50) { yellowStars.splice(i, 1); continue; }
       if (circleHit(player, s)) {
         const gain = getYellowRankGain();
         run.rankPoint += gain;
         emitParticles(s.x, s.y, "#ffd84a", 14, 0.7);
         addPopup(s.x, s.y, `+${gain.toFixed(2)} RANK`, "#ffd84a");
+        sfxPickup();
         yellowStars.splice(i, 1);
         updateHUD();
       }
@@ -779,12 +1001,24 @@
       const s = purpleStars[i];
       s.y += s.speed * dt;
       s.rot += s.spin * dt;
+
+      if (magnetTimer > 0) {
+        const dx = player.x - s.x;
+        const dy = player.y - s.y;
+        const dist = Math.max(1, Math.hypot(dx, dy));
+        if (dist < 170) {
+          s.x += (dx / dist) * 360 * dt;
+          s.y += (dy / dist) * 360 * dt;
+        }
+      }
+
       if (s.y > H + 50) { purpleStars.splice(i, 1); continue; }
       if (circleHit(player, s)) {
         save.starCurrency += 1;
         persistSave();
         emitParticles(s.x, s.y, "#b25dff", 16, 0.8);
         addPopup(s.x, s.y, "+1 STAR", "#d39cff");
+        sfxPickup();
         purpleStars.splice(i, 1);
         updateHUD();
       }
@@ -797,13 +1031,37 @@
 
     for (const s of yellowStars) drawStarObj(s, false, now);
     for (const s of purpleStars) drawStarObj(s, true, now);
+    for (const p of powerups) drawPowerup(p, now);
     for (const h of hazards) {
       if (h.type === "meteor") drawMeteor(h);
+      else if (h.type === "blackhole") drawBlackHole(h, now);
       else drawPlanet(h);
     }
 
     drawParticles(dt);
     drawPlayer(now);
+
+    if (shieldTimer > 0) {
+      ctx.save();
+      ctx.strokeStyle = "rgba(125,255,155,.85)";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(player.x, player.y, player.r + 10 + Math.sin(now * 0.01) * 2, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    if (magnetTimer > 0) {
+      ctx.save();
+      ctx.strokeStyle = "rgba(255,216,74,.35)";
+      ctx.setLineDash([6, 5]);
+      ctx.beginPath();
+      ctx.arc(player.x, player.y, 170, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+      ctx.setLineDash([]);
+    }
+
     drawPopups(dt);
   }
 
@@ -854,6 +1112,7 @@
 
 
   function startRun() {
+    ensureAudio();
     resetRun();
     updateHUD();
     menuOverlay.style.display = "none";
@@ -863,7 +1122,7 @@
   }
 
   startBtn.addEventListener("click", startRun);
-  upgradeBtn.addEventListener("click", buyUpgrade);
+  upgradeBtn.addEventListener("click", () => { ensureAudio(); buyUpgrade(); });
   menuBtn.addEventListener("click", () => {
     running = false;
     switchTab("play");
@@ -878,6 +1137,7 @@
     showToast("RESET RUN");
   });
   nameBtn.addEventListener("click", () => {
+    ensureAudio();
     playerName = askNickname(playerName);
     localStorage.setItem("xgp_v5_name", playerName);
     updateHUD();
