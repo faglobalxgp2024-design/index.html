@@ -49,21 +49,20 @@
   let spawnStarTimer = 0;
   let rankSyncTimer = 0;
 
-  let playerName = localStorage.getItem("xgp_v4_name") || "";
+  let playerName = localStorage.getItem("xgp_v5_name") || "";
   if (!playerName) {
     playerName = prompt("Enter your nickname", "PLAYER") || "PLAYER";
-    localStorage.setItem("xgp_v4_name", playerName);
+    localStorage.setItem("xgp_v5_name", playerName);
   }
 
-  // Real online ranking requires your own Firebase config.
-  const firebaseConfig = null;
+  const onlineConfig = window.XGP_ONLINE_CONFIG || { enabled: false, firebaseConfig: null };
   let useFirebase = false;
   let db = null;
 
   const save = {
-    starCurrency: Number(localStorage.getItem("xgp_v4_star") || 0),
-    level: Number(localStorage.getItem("xgp_v4_level") || 1),
-    bestRank: Number(localStorage.getItem("xgp_v4_best_rank") || 0),
+    starCurrency: Number(localStorage.getItem("xgp_v5_star") || 0),
+    level: Number(localStorage.getItem("xgp_v5_level") || 1),
+    bestRank: Number(localStorage.getItem("xgp_v5_best_rank") || 0),
   };
 
   const run = {
@@ -76,7 +75,7 @@
   const purpleStars = [];
   const particles = [];
   const popups = [];
-  const bgStars = Array.from({length: 90}, () => ({
+  const bgStars = Array.from({length: 100}, () => ({
     x: Math.random() * W, y: Math.random() * H, s: Math.random() * 2 + 1, v: Math.random() * 18 + 9
   }));
 
@@ -87,7 +86,7 @@
     toast.textContent = msg;
     toast.classList.add("show");
     clearTimeout(showToast._t);
-    showToast._t = setTimeout(() => toast.classList.remove("show"), 900);
+    showToast._t = setTimeout(() => toast.classList.remove("show"), 950);
   }
 
   function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
@@ -108,9 +107,9 @@
   }
 
   function persistSave() {
-    localStorage.setItem("xgp_v4_star", String(Math.floor(save.starCurrency)));
-    localStorage.setItem("xgp_v4_level", String(save.level));
-    localStorage.setItem("xgp_v4_best_rank", String(save.bestRank));
+    localStorage.setItem("xgp_v5_star", String(Math.floor(save.starCurrency)));
+    localStorage.setItem("xgp_v5_level", String(save.level));
+    localStorage.setItem("xgp_v5_best_rank", String(Math.floor(save.bestRank)));
   }
 
   function updateHUD() {
@@ -134,7 +133,7 @@
   }
 
   async function initFirebase() {
-    if (!firebaseConfig) {
+    if (!onlineConfig.enabled || !onlineConfig.firebaseConfig || !onlineConfig.firebaseConfig.projectId) {
       lbMode.textContent = "Local mode";
       return;
     }
@@ -143,36 +142,36 @@
         import("https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js"),
         import("https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js"),
       ]);
-      const app = initializeApp(firebaseConfig);
+      const app = initializeApp(onlineConfig.firebaseConfig);
       db = { api: { getFirestore, doc, getDoc, setDoc }, store: getFirestore(app) };
       useFirebase = true;
       lbMode.textContent = "Online mode";
       await loadLeaderboard();
     } catch (e) {
+      console.error(e);
       lbMode.textContent = "Local mode";
     }
   }
 
   function spawnHazard() {
-    const type = Math.random() < 0.6 ? "meteor" : "planet";
+    const type = Math.random() < 0.62 ? "meteor" : "planet";
     if (type === "meteor") {
       hazards.push({
         type,
         x: rand(28, W - 28),
         y: -40,
-        r: 16, // hitbox smaller than art
+        r: 16,
         visualR: 22,
         speed: rand(220, 310) + Math.min(180, timeAlive * 3.2),
         rot: rand(0, Math.PI * 2),
         spin: rand(-3.5, 3.5),
-        fire: rand(0, Math.PI * 2),
       });
     } else {
       hazards.push({
         type,
         x: rand(34, W - 34),
         y: -58,
-        r: 20, // slightly smaller than visual
+        r: 20,
         visualR: 28,
         speed: rand(170, 245) + Math.min(120, timeAlive * 2.3),
         rot: rand(0, Math.PI * 2),
@@ -266,27 +265,19 @@
     const tilt = clamp(player.moveX * 0.24, -0.35, 0.35);
     ctx.rotate(tilt);
 
-    // back glow
     ctx.fillStyle = "rgba(92,206,255,.22)";
     ctx.beginPath();
     ctx.ellipse(0, 10, 28, 12, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // wings
     ctx.fillStyle = "#68c8f7";
-    ctx.beginPath();
-    ctx.moveTo(-30, 14); ctx.lineTo(-6, 0); ctx.lineTo(-6, 18); ctx.closePath(); ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(30, 14); ctx.lineTo(6, 0); ctx.lineTo(6, 18); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-30, 14); ctx.lineTo(-6, 0); ctx.lineTo(-6, 18); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(30, 14); ctx.lineTo(6, 0); ctx.lineTo(6, 18); ctx.closePath(); ctx.fill();
 
-    // side fins
     ctx.fillStyle = "#48a7d9";
-    ctx.beginPath();
-    ctx.moveTo(-17, 18); ctx.lineTo(-5, 10); ctx.lineTo(-7, 24); ctx.closePath(); ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(17, 18); ctx.lineTo(5, 10); ctx.lineTo(7, 24); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-17, 18); ctx.lineTo(-5, 10); ctx.lineTo(-7, 24); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(17, 18); ctx.lineTo(5, 10); ctx.lineTo(7, 24); ctx.closePath(); ctx.fill();
 
-    // main body
     const bodyG = ctx.createLinearGradient(0, -26, 0, 26);
     bodyG.addColorStop(0, "#ecfbff");
     bodyG.addColorStop(0.4, "#87dafc");
@@ -302,69 +293,37 @@
     ctx.closePath();
     ctx.fill();
 
-    // nose detail
     ctx.fillStyle = "#ffffff";
-    ctx.beginPath();
-    ctx.moveTo(0, -32); ctx.lineTo(7, -16); ctx.lineTo(-7, -16); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(0, -32); ctx.lineTo(7, -16); ctx.lineTo(-7, -16); ctx.closePath(); ctx.fill();
 
-    // cockpit
     ctx.fillStyle = "#10253e";
-    ctx.beginPath();
-    ctx.ellipse(0, -8, 6, 11, 0, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.beginPath(); ctx.ellipse(0, -8, 6, 11, 0, 0, Math.PI * 2); ctx.fill();
 
-    // body stripe
     ctx.strokeStyle = "#ffffffaa";
     ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(0, -16);
-    ctx.lineTo(0, 16);
-    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, -16); ctx.lineTo(0, 16); ctx.stroke();
 
-    // engines
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(-7, 20, 5, 6);
     ctx.fillRect(2, 20, 5, 6);
 
-    // engine flames
     const flick = Math.sin(performance.now() * 0.04) * 4;
     ctx.fillStyle = "#fff3b3";
-    ctx.beginPath();
-    ctx.moveTo(-4.5, 34 + flick);
-    ctx.lineTo(0, 21);
-    ctx.lineTo(-9, 21);
-    ctx.closePath();
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(4.5, 34 + flick);
-    ctx.lineTo(9, 21);
-    ctx.lineTo(0, 21);
-    ctx.closePath();
-    ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-4.5, 34 + flick); ctx.lineTo(0, 21); ctx.lineTo(-9, 21); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(4.5, 34 + flick); ctx.lineTo(9, 21); ctx.lineTo(0, 21); ctx.closePath(); ctx.fill();
 
     ctx.fillStyle = "#ff9b43";
-    ctx.beginPath();
-    ctx.moveTo(-4, 30 + flick * 0.7);
-    ctx.lineTo(-1, 22);
-    ctx.lineTo(-7, 22);
-    ctx.closePath();
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(4, 30 + flick * 0.7);
-    ctx.lineTo(7, 22);
-    ctx.lineTo(1, 22);
-    ctx.closePath();
-    ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-4, 30 + flick * 0.7); ctx.lineTo(-1, 22); ctx.lineTo(-7, 22); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(4, 30 + flick * 0.7); ctx.lineTo(7, 22); ctx.lineTo(1, 22); ctx.closePath(); ctx.fill();
 
     ctx.restore();
   }
 
-  function drawMeteor(h, now) {
+  function drawMeteor(h) {
     ctx.save();
     ctx.translate(h.x, h.y);
     ctx.rotate(h.rot);
 
-    // fiery trail
     const trail = ctx.createRadialGradient(-6, -10, 4, -6, -10, 30);
     trail.addColorStop(0, "rgba(255,255,210,.75)");
     trail.addColorStop(0.35, "rgba(255,182,80,.45)");
@@ -391,7 +350,7 @@
     ctx.restore();
   }
 
-  function drawPlanet(h, now) {
+  function drawPlanet(h) {
     ctx.save();
     ctx.translate(h.x, h.y);
     ctx.rotate(h.rot);
@@ -409,14 +368,12 @@
     ctx.arc(0, 0, h.visualR, 0, Math.PI * 2);
     ctx.fill();
 
-    // ring
     ctx.strokeStyle = "rgba(255,255,255,.55)";
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.ellipse(0, 0, h.visualR + 9, 11, 0.3, 0, Math.PI * 2);
     ctx.stroke();
 
-    // light texture
     ctx.strokeStyle = "rgba(255,255,255,.12)";
     ctx.lineWidth = 2;
     ctx.beginPath(); ctx.arc(-4, -2, h.visualR * 0.55, -0.8, 1.2); ctx.stroke();
@@ -537,7 +494,7 @@
       renderLeaderboard(rows);
       return;
     }
-    const rows = JSON.parse(localStorage.getItem("xgp_v4_local_lb") || "[]");
+    const rows = JSON.parse(localStorage.getItem("xgp_v5_local_lb") || "[]");
     renderLeaderboard(rows);
   }
 
@@ -564,17 +521,17 @@
       else rows.push(entry);
 
       rows.sort((a, b) => b.score - a.score);
-      await setDoc(ref, { rows: rows.slice(0, 50) });
+      await setDoc(ref, { rows: rows.slice(0, 100) });
       await loadLeaderboard();
       return;
     }
 
-    const rows = JSON.parse(localStorage.getItem("xgp_v4_local_lb") || "[]");
+    const rows = JSON.parse(localStorage.getItem("xgp_v5_local_lb") || "[]");
     const idx = rows.findIndex(r => r.name === entry.name);
     if (idx >= 0) rows[idx].score = Math.max(rows[idx].score, entry.score);
     else rows.push(entry);
     rows.sort((a, b) => b.score - a.score);
-    localStorage.setItem("xgp_v4_local_lb", JSON.stringify(rows.slice(0, 50)));
+    localStorage.setItem("xgp_v5_local_lb", JSON.stringify(rows.slice(0, 100)));
     await loadLeaderboard();
   }
 
@@ -590,11 +547,6 @@
     updateHUD();
     emitParticles(player.x, player.y, "#7dd7ff", 22, 0.8);
     showToast(`LEVEL UP ${save.level}`);
-  }
-
-  function gameOver() {
-    if (!running) return;
-    running = false;
   }
 
   function endRun() {
@@ -616,7 +568,7 @@
     menuOverlay.style.display = "flex";
   }
 
-  function update(dt, now) {
+  function update(dt) {
     timeAlive += dt;
 
     if (!pointerActive) player.x += player.moveX * player.speed * dt;
@@ -680,15 +632,15 @@
     }
   }
 
-  function draw(dt, now) {
+  function draw(now, dt) {
     ctx.clearRect(0, 0, W, H);
     drawBackground(dt);
 
     for (const s of yellowStars) drawStarObj(s, false, now);
     for (const s of purpleStars) drawStarObj(s, true, now);
     for (const h of hazards) {
-      if (h.type === "meteor") drawMeteor(h, now);
-      else drawPlanet(h, now);
+      if (h.type === "meteor") drawMeteor(h);
+      else drawPlanet(h);
     }
 
     drawParticles(dt);
@@ -701,8 +653,8 @@
     const dt = Math.min(0.033, (now - last) / 1000);
     last = now;
 
-    if (running) update(dt, now);
-    draw(dt, now);
+    if (running) update(dt);
+    draw(now, dt);
     requestAnimationFrame(loop);
   }
 
@@ -799,7 +751,7 @@
     const next = prompt("Enter your nickname", playerName);
     if (!next) return;
     playerName = next.trim() || "PLAYER";
-    localStorage.setItem("xgp_v4_name", playerName);
+    localStorage.setItem("xgp_v5_name", playerName);
     updateHUD();
     showToast("NAME SAVED");
   });
