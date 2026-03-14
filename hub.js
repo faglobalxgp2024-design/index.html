@@ -38,6 +38,9 @@
 
   const previewLv10 = document.getElementById("previewLv10");
   const previewLv20 = document.getElementById("previewLv20");
+  const previewLv30 = document.getElementById("previewLv30");
+  const previewLv40 = document.getElementById("previewLv40");
+  const previewLv50 = document.getElementById("previewLv50");
 
   const W = canvas.width;
   const H = canvas.height;
@@ -611,7 +614,7 @@
     menuOverlay.style.display = "flex";
   }
 
-  function drawPreviewShip(canvas, auraColor, extraColor) {
+  function drawPreviewShip(canvas, auraColor, extraColor, rainbow = false) {
     if (!canvas) return;
     const pctx = canvas.getContext("2d");
     const w = canvas.width, h = canvas.height;
@@ -623,7 +626,7 @@
     pctx.fillStyle = bg;
     pctx.fillRect(0, 0, w, h);
 
-    for (let i = 0; i < 14; i++) {
+    for (let i = 0; i < 16; i++) {
       pctx.fillStyle = "rgba(223,246,255,.7)";
       pctx.fillRect((i * 31) % w, (i * 17) % h, 1.5, 1.5);
     }
@@ -633,11 +636,22 @@
     pctx.save();
     pctx.translate(cx, cy);
 
-    const g = pctx.createRadialGradient(0, 8, 5, 0, 8, 34);
-    g.addColorStop(0, auraColor + "cc");
-    g.addColorStop(0.4, auraColor + "44");
-    g.addColorStop(1, auraColor + "00");
-    pctx.fillStyle = g;
+    let auraFill = auraColor;
+    if (rainbow) {
+      const rg = pctx.createRadialGradient(0, 8, 5, 0, 8, 34);
+      rg.addColorStop(0, "rgba(255,87,87,.8)");
+      rg.addColorStop(0.25, "rgba(255,216,74,.65)");
+      rg.addColorStop(0.5, "rgba(66,255,114,.55)");
+      rg.addColorStop(0.75, "rgba(77,214,255,.5)");
+      rg.addColorStop(1, "rgba(178,93,255,0)");
+      pctx.fillStyle = rg;
+    } else {
+      const g = pctx.createRadialGradient(0, 8, 5, 0, 8, 34);
+      g.addColorStop(0, auraFill + "cc");
+      g.addColorStop(0.4, auraFill + "44");
+      g.addColorStop(1, auraFill + "00");
+      pctx.fillStyle = g;
+    }
     pctx.beginPath();
     pctx.arc(0, 4, 34, 0, Math.PI * 2);
     pctx.fill();
@@ -678,7 +692,17 @@
     pctx.lineWidth = 2;
     pctx.beginPath(); pctx.moveTo(0, -22); pctx.lineTo(0, 16); pctx.stroke();
 
-    pctx.strokeStyle = extraColor;
+    if (rainbow) {
+      const rg2 = pctx.createLinearGradient(-10, 0, 10, 0);
+      rg2.addColorStop(0, "#ff5757");
+      rg2.addColorStop(0.25, "#ffd84a");
+      rg2.addColorStop(0.5, "#42ff72");
+      rg2.addColorStop(0.75, "#4dd6ff");
+      rg2.addColorStop(1, "#b25dff");
+      pctx.strokeStyle = rg2;
+    } else {
+      pctx.strokeStyle = extraColor;
+    }
     pctx.lineWidth = 2.2;
     pctx.beginPath(); pctx.moveTo(-9, 2); pctx.lineTo(-2, 11); pctx.stroke();
     pctx.beginPath(); pctx.moveTo(9, 2); pctx.lineTo(2, 11); pctx.stroke();
@@ -697,6 +721,9 @@
   function renderShopPreviews() {
     drawPreviewShip(previewLv10, "#ffd84a", "#ffd84a");
     drawPreviewShip(previewLv20, "#ff5757", "#ff5757");
+    drawPreviewShip(previewLv30, "#b25dff", "#b25dff");
+    drawPreviewShip(previewLv40, "#42ff72", "#42ff72");
+    drawPreviewShip(previewLv50, "#b25dff", "#b25dff", true);
   }
 
 
