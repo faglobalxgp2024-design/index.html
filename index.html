@@ -33,14 +33,14 @@
       border-left:1px solid rgba(255,255,255,.05);
       border-right:1px solid rgba(255,255,255,.05);
     }
-    .hud{position:absolute;left:10px;right:10px;top:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px;pointer-events:none}
+    .hud{position:absolute;left:8px;right:8px;top:8px;display:grid;grid-template-columns:1fr 1fr;gap:6px;pointer-events:none}
     .card{
-      background:var(--panel);border:1px solid rgba(122,216,255,.35);border-radius:14px;
-      padding:8px 10px;backdrop-filter:blur(6px);box-shadow:0 8px 30px rgba(0,0,0,.25)
+      background:var(--panel);border:1px solid rgba(122,216,255,.32);border-radius:12px;
+      padding:6px 8px;backdrop-filter:blur(6px);box-shadow:0 6px 20px rgba(0,0,0,.22)
     }
-    .label{font-size:11px;color:var(--muted)}
-    .value{font-size:18px;font-weight:700;margin-top:4px}
-    .toolbar{position:absolute;left:10px;right:10px;bottom:12px;display:flex;gap:8px;align-items:end}
+    .label{font-size:9px;color:var(--muted);letter-spacing:.2px}
+    .value{font-size:14px;font-weight:700;margin-top:3px}
+    .toolbar{position:absolute;left:8px;right:8px;bottom:10px;display:flex;gap:6px;align-items:end}
     button{
       pointer-events:auto;border:1px solid rgba(122,216,255,.45);
       background:var(--panel);color:var(--text);padding:10px 12px;border-radius:12px;font-weight:700;cursor:pointer
@@ -60,29 +60,52 @@
     .menuSection{display:none}
     .menuSection.active{display:block}
     .shopItem,.boardFrame{
-      background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px;margin-top:10px
+      background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      border:1px solid rgba(255,255,255,.10);border-radius:16px;padding:12px;margin-top:10px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 10px 24px rgba(0,0,0,.18);
     }
+    .previewRow{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+    .previewCard{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:10px}
+    .previewLabel{font-size:12px;color:var(--muted);margin-bottom:6px}
+    .previewCanvas{width:100%;height:100px;border-radius:12px;background:
+      radial-gradient(circle at 50% 20%, rgba(125,216,255,.16), transparent 24%),
+      linear-gradient(180deg,#071022 0%,#040914 100%);
+      border:1px solid rgba(122,216,255,.18)}
     .shopItemTitle{font-weight:700;margin-bottom:6px}
     .tiny{font-size:12px;color:var(--muted)}
     .row{display:flex;gap:8px;align-items:center;justify-content:space-between}
-    #lbBox h3{margin:0 0 8px;font-size:16px}
-    #lbList{margin:0;padding-left:18px}
-    #lbList li{font-size:13px;line-height:1.5;margin-bottom:3px}
+    #lbBox h3{margin:0 0 6px;font-size:18px;letter-spacing:.4px}
+    #lbList{margin:10px 0 0;padding:0;list-style:none}
+    #lbList li{
+      display:flex;align-items:center;justify-content:space-between;
+      gap:10px;font-size:13px;line-height:1.45;margin-bottom:6px;
+      padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.03);
+      border:1px solid rgba(255,255,255,.06)
+    }
+    .rankBadge{display:inline-flex;align-items:center;gap:8px;min-width:0}
+    .rankNum{color:var(--muted);width:22px}
+    .crown{font-size:16px}
+    .nameText{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px}
+    .scoreText{font-weight:700;color:var(--yellow)}
     #toast{
       position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
       background:rgba(0,0,0,.72);border:1px solid rgba(255,255,255,.14);
       border-radius:12px;padding:12px 14px;font-weight:700;opacity:0;pointer-events:none;transition:opacity .18s ease;z-index:30
     }
     #toast.show{opacity:1}
-    #joyWrap{
-      position:absolute;left:14px;bottom:86px;width:120px;height:120px;border-radius:60px;
-      background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);display:none
+    #joyWrap{display:none !important}
+    #joyStick{display:none !important}
+    @media (max-width:700px){
+      .hud{top:6px;left:6px;right:6px;gap:5px}
+      .card{padding:5px 7px}
+      .label{font-size:8px}
+      .value{font-size:12px}
+      .toolbar{left:6px;right:6px;gap:5px;bottom:8px}
+      button{padding:8px 9px;font-size:12px}
+      .menuPanel{width:min(360px,95%);padding:14px}
+      .menuPanel h1{font-size:22px}
+      .menuPanel p{font-size:13px}
     }
-    #joyStick{
-      position:absolute;left:40px;top:40px;width:40px;height:40px;border-radius:20px;
-      background:rgba(125,215,255,.26);border:1px solid rgba(125,215,255,.55);box-shadow:0 0 24px rgba(105,210,255,.2)
-    }
-    @media (max-width:700px){#joyWrap{display:block}}
   </style>
 </head>
 <body>
@@ -140,12 +163,23 @@
             <div class="row" style="margin-top:8px"><span>CURRENT LEVEL</span><b id="shopLevelText">1</b></div>
             <div class="row" style="margin-top:8px"><span>CURRENT BONUS</span><b id="shopBonusText">0.5%</b></div>
             <button id="upgradeBtn" style="width:100%;margin-top:12px">BUY UPGRADE</button>
+
+            <div class="previewRow">
+              <div class="previewCard">
+                <div class="previewLabel">LEVEL 10 EFFECT PREVIEW</div>
+                <canvas id="previewLv10" class="previewCanvas" width="150" height="100"></canvas>
+              </div>
+              <div class="previewCard">
+                <div class="previewLabel">LEVEL 20 EFFECT PREVIEW</div>
+                <canvas id="previewLv20" class="previewCanvas" width="150" height="100"></canvas>
+              </div>
+            </div>
           </div>
         </div>
 
         <div id="boardSection" class="menuSection">
           <div id="lbBox" class="boardFrame">
-            <h3>RANK BOARD</h3>
+            <h3>ONLINE RANK BOARD · TOP20</h3>
             <div class="tiny" id="lbMode">Checking online mode...</div>
             <ol id="lbList"></ol>
           </div>
