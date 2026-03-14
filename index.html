@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-  <title>XGP SPACE RUN V5 ONLINE</title>
+  <title>XGP SPACE RUN MASTER V2</title>
   <style>
     :root{
       --panel:rgba(8,14,28,.82);
@@ -82,6 +82,21 @@
       radial-gradient(circle at 50% 20%, rgba(125,216,255,.16), transparent 24%),
       linear-gradient(180deg,#071022 0%,#040914 100%);
       border:1px solid rgba(122,216,255,.18)}
+
+    .skinGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+    .skinCard{
+      background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:10px
+    }
+    .skinTitle{font-size:12px;font-weight:700;margin-bottom:4px}
+    .skinMeta{font-size:11px;color:var(--muted);margin-bottom:8px}
+    .skinPreview{
+      height:56px;border-radius:10px;border:1px solid rgba(122,216,255,.18);margin-bottom:8px;
+      background:radial-gradient(circle at 50% 25%, rgba(125,216,255,.16), transparent 28%), linear-gradient(180deg,#071022 0%,#040914 100%);
+      display:flex;align-items:center;justify-content:center
+    }
+    .skinPreviewShip{width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-bottom:34px solid #fff;filter:drop-shadow(0 0 8px rgba(255,255,255,.35));transform:translateY(6px)}
+
     .shopItemTitle{font-weight:700;margin-bottom:6px}
     .tiny{font-size:12px;color:var(--muted)}
     .row{display:flex;gap:8px;align-items:center;justify-content:space-between}
@@ -154,6 +169,7 @@
         <div class="menuTabs">
           <button id="tabPlay">PLAY</button>
           <button id="tabShop">SHOP</button>
+          <button id="tabSkins">SKINS</button>
           <button id="tabBoard">RANK BOARD</button>
         </div>
 
@@ -164,7 +180,7 @@
             <div class="row" style="margin-top:8px"><b>BEST RANK</b><span id="bestRankText">0</span></div>
             <div class="row" style="margin-top:8px"><b>LEVEL</b><span id="menuLevelText">1</span></div>
             <div class="tiny" style="margin-top:10px;line-height:1.55">
-              V8 adds black holes, shield/magnet items, revive using 50 STAR, and sound effects.
+              Master version adds black holes, shield/magnet items, revive using 50 STAR, upbeat BGM, animated space background, boss phase, and 10 skins.
             </div>
           </div>
           <button id="startBtn" style="width:100%;margin-top:12px">START GAME</button>
@@ -204,6 +220,15 @@
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+
+        <div id="skinsSection" class="menuSection">
+          <div class="shopItem">
+            <div class="shopItemTitle">SHIP SKINS · 10 TYPES</div>
+            <div class="tiny">Choose your favorite ship style. Skins are cosmetic and change the jet color / accent look in game.</div>
+            <div class="skinGrid" id="skinGrid"></div>
           </div>
         </div>
 
