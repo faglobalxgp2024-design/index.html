@@ -20,13 +20,10 @@
 
   const tabPlay = document.getElementById("tabPlay");
   const tabShop = document.getElementById("tabShop");
-  const tabSkins = document.getElementById("tabSkins");
   const tabBoard = document.getElementById("tabBoard");
   const playSection = document.getElementById("playSection");
   const shopSection = document.getElementById("shopSection");
-  const skinsSection = document.getElementById("skinsSection");
   const boardSection = document.getElementById("boardSection");
-  const skinGrid = document.getElementById("skinGrid");
 
   const playerNameText = document.getElementById("playerNameText");
   const menuStarText = document.getElementById("menuStarText");
@@ -80,26 +77,11 @@
     starCurrency: Number(localStorage.getItem("xgp_v5_star") || 0),
     level: Number(localStorage.getItem("xgp_v5_level") || 1),
     bestRank: Number(localStorage.getItem("xgp_v5_best_rank") || 0),
-    skin: localStorage.getItem("xgp_v5_skin") || "default",
   };
 
   const run = {
     rankPoint: 0,
-    bossRewardClaimed: false,
   };
-
-  const SKINS = [
-    { id:"default", title:"Default", body:"#67c6f7", accent:"#ffffff", note:"Balanced starter" },
-    { id:"neon", title:"Neon", body:"#00f7ff", accent:"#bfffff", note:"Bright cyber glow" },
-    { id:"gold", title:"Gold", body:"#ffd84a", accent:"#fff1a6", note:"Luxury ace style" },
-    { id:"plasma", title:"Plasma", body:"#ff57d9", accent:"#ffd4fa", note:"Hot magenta core" },
-    { id:"cyber", title:"Cyber", body:"#42ff72", accent:"#d9ffe4", note:"Green battle tech" },
-    { id:"galaxy", title:"Galaxy", body:"#7f8cff", accent:"#eef0ff", note:"Deep space feel" },
-    { id:"shadow", title:"Shadow", body:"#2b3242", accent:"#ff5757", note:"Stealth red lights" },
-    { id:"ruby", title:"Ruby", body:"#ff416c", accent:"#ffe1ea", note:"High-energy red" },
-    { id:"emerald", title:"Emerald", body:"#16d987", accent:"#e4fff3", note:"Sharp green racer" },
-    { id:"titan", title:"Titan", body:"#ff9d2f", accent:"#fff1db", note:"Heavy orange armor" },
-  ];
 
   const player = { x: W * 0.5, y: H * 0.82, r: 22, speed: 430, moveX: 0 };
   const hazards = [];
@@ -118,20 +100,6 @@
   let shieldTimer = 0;
   let magnetTimer = 0;
   let reviveUsedThisRun = false;
-
-  let boss = null;
-  let bossCooldown = 32;
-  let bossAttackTimer = 0;
-  let bossPhaseTimer = 0;
-  let backgroundPulse = 0;
-  const nebulaClouds = Array.from({length: 6}, (_, i) => ({
-    x: Math.random() * W,
-    y: Math.random() * H * 0.75,
-    r: 90 + Math.random() * 90,
-    hue: i % 2 ? "rgba(178,93,255,.10)" : "rgba(77,214,255,.10)",
-    drift: 6 + Math.random() * 10,
-  }));
-  const shootingStars = [];
 
   let audioCtx = null;
   function ensureAudio() {
@@ -164,15 +132,13 @@
   let bgmTimer = null;
   let bgmStep = 0;
   const BGM_NOTES = {
-    C4:261.63, D4:293.66, E4:329.63, F4:349.23, G4:392.00, A4:440.00, B4:493.88,
+    C4:261.63, D4:293.66, E4:329.63, G4:392.00, A4:440.00,
     C5:523.25, D5:587.33, E5:659.25, G5:783.99, A5:880.00
   };
-  const bgmLeadA = ["E5", null, "G5", "A5", "G5", null, "E5", null, "D5", null, "E5", "G5", "A5", null, "G5", null];
-  const bgmLeadB = ["A5", null, "G5", "E5", "D5", null, "E5", null, "G5", null, "A5", "G5", "E5", null, "D5", null];
-  const bgmBass = ["C4", null, null, "C4", "A4", null, null, "A4", "F4", null, null, "F4", "G4", null, null, "G4"];
-  const bgmPerc = [1,0,0,1,0,1,0,0,1,0,0,1,0,1,0,0];
+  const bgmLead = ["E5", null, "G5", null, "A5", null, "G5", null, "E5", null, "D5", null, "C5", null, "D5", null];
+  const bgmBass = ["C4", null, null, null, "A4", null, null, null, "G4", null, null, null, "D4", null, null, null];
 
-  function bgmTone(freq, dur = 0.14, type = "triangle", vol = 0.02) {
+  function bgmTone(freq, dur = 0.18, type = "triangle", vol = 0.018) {
     if (!audioCtx || audioCtx.state !== "running" || !bgmEnabled) return;
     const t = audioCtx.currentTime;
     const osc = audioCtx.createOscillator();
@@ -180,7 +146,7 @@
     osc.type = type;
     osc.frequency.setValueAtTime(freq, t);
     gain.gain.setValueAtTime(0.0001, t);
-    gain.gain.exponentialRampToValueAtTime(vol, t + 0.012);
+    gain.gain.exponentialRampToValueAtTime(vol, t + 0.02);
     gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     osc.connect(gain);
     gain.connect(audioCtx.destination);
@@ -188,31 +154,15 @@
     osc.stop(t + dur + 0.03);
   }
 
-  function bgmNoise(vol = 0.012, dur = 0.045) {
-    if (!audioCtx || audioCtx.state !== "running" || !bgmEnabled) return;
-    const buffer = audioCtx.createBuffer(1, Math.floor(audioCtx.sampleRate * dur), audioCtx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
-    const src = audioCtx.createBufferSource();
-    const gain = audioCtx.createGain();
-    src.buffer = buffer;
-    gain.gain.value = vol;
-    src.connect(gain);
-    gain.connect(audioCtx.destination);
-    src.start();
-  }
-
   function bgmTick() {
     if (!bgmEnabled) return;
     const i = bgmStep % 16;
-    const leadSet = (Math.floor(bgmStep / 16) % 2 === 0) ? bgmLeadA : bgmLeadB;
-    const lead = leadSet[i];
+    const lead = bgmLead[i];
     const bass = bgmBass[i];
-    if (lead) bgmTone(BGM_NOTES[lead], 0.12, "triangle", 0.02);
-    if (bass) bgmTone(BGM_NOTES[bass], 0.18, "sine", 0.015);
-    if (bgmPerc[i]) bgmNoise(0.008 + (i % 4 === 0 ? 0.006 : 0), 0.04);
+    if (lead) bgmTone(BGM_NOTES[lead], 0.16, "triangle", 0.018);
+    if (bass) bgmTone(BGM_NOTES[bass], 0.22, "sine", 0.014);
     bgmStep++;
-    bgmTimer = setTimeout(bgmTick, 180);
+    bgmTimer = setTimeout(bgmTick, 240);
   }
 
   function startBGM() {
@@ -264,7 +214,6 @@
     localStorage.setItem("xgp_v5_star", String(Math.floor(save.starCurrency)));
     localStorage.setItem("xgp_v5_level", String(save.level));
     localStorage.setItem("xgp_v5_best_rank", String(Math.floor(save.bestRank)));
-    localStorage.setItem("xgp_v5_skin", save.skin);
   }
 
   function updateHUD() {
@@ -284,7 +233,6 @@
   function switchTab(name) {
     playSection.classList.toggle("active", name === "play");
     shopSection.classList.toggle("active", name === "shop");
-    skinsSection.classList.toggle("active", name === "skins");
     boardSection.classList.toggle("active", name === "board");
   }
 
@@ -412,69 +360,14 @@
     return null;
   }
 
-  function getCurrentSkin() {
-    return SKINS.find(s => s.id === save.skin) || SKINS[0];
-  }
-
   function drawBackground(dt) {
-    backgroundPulse += dt;
-
-    const bg = ctx.createLinearGradient(0, 0, 0, H);
-    bg.addColorStop(0, "#081225");
-    bg.addColorStop(0.55, "#040914");
-    bg.addColorStop(1, "#02050c");
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, W, H);
-
-    for (const n of nebulaClouds) {
-      n.y += n.drift * dt * 0.18;
-      if (n.y - n.r > H) n.y = -n.r;
-      const g = ctx.createRadialGradient(n.x, n.y, 10, n.x, n.y, n.r);
-      g.addColorStop(0, n.hue.replace(".10", ".22"));
-      g.addColorStop(0.55, n.hue);
-      g.addColorStop(1, "rgba(0,0,0,0)");
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    if (Math.random() < 0.018 && shootingStars.length < 4) {
-      shootingStars.push({
-        x: Math.random() * W * 0.8 + 20,
-        y: -20,
-        vx: -220 - Math.random() * 140,
-        vy: 300 + Math.random() * 120,
-        life: 0.8,
-        age: 0
-      });
-    }
-
-    for (let i = shootingStars.length - 1; i >= 0; i--) {
-      const s = shootingStars[i];
-      s.age += dt;
-      s.x += s.vx * dt;
-      s.y += s.vy * dt;
-      if (s.age >= s.life) {
-        shootingStars.splice(i, 1);
-        continue;
-      }
-      const a = 1 - s.age / s.life;
-      ctx.strokeStyle = `rgba(255,255,255,${a})`;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(s.x, s.y);
-      ctx.lineTo(s.x + 34, s.y - 46);
-      ctx.stroke();
-    }
-
     for (const s of bgStars) {
       s.y += s.v * dt;
       if (s.y > H + 4) {
         s.y = -4;
         s.x = Math.random() * W;
       }
-      ctx.globalAlpha = 0.6 + Math.sin(backgroundPulse * 2 + s.x * 0.01) * 0.2;
+      ctx.globalAlpha = 0.7;
       ctx.fillStyle = "#dff6ff";
       ctx.fillRect(s.x, s.y, s.s, s.s);
     }
@@ -483,7 +376,6 @@
 
   function drawPlayer(now) {
     const aura = getPlayerAura();
-    const skin = getCurrentSkin();
     if (aura) {
       ctx.save();
       const color = aura === "rainbow" ? auraColorAt(now * 0.001) : aura;
@@ -514,24 +406,24 @@
 
     // rear wing plates
     const wingGrad = ctx.createLinearGradient(-28, 0, 28, 0);
-    wingGrad.addColorStop(0, skin.body);
-    wingGrad.addColorStop(0.5, skin.accent);
-    wingGrad.addColorStop(1, skin.body);
+    wingGrad.addColorStop(0, "#2d90cd");
+    wingGrad.addColorStop(0.5, "#6dd5ff");
+    wingGrad.addColorStop(1, "#2d90cd");
     ctx.fillStyle = wingGrad;
     ctx.beginPath(); ctx.moveTo(-34, 16); ctx.lineTo(-7, -1); ctx.lineTo(-6, 18); ctx.closePath(); ctx.fill();
     ctx.beginPath(); ctx.moveTo(34, 16); ctx.lineTo(7, -1); ctx.lineTo(6, 18); ctx.closePath(); ctx.fill();
 
     // side fins
-    ctx.fillStyle = skin.body;
+    ctx.fillStyle = "#275e92";
     ctx.beginPath(); ctx.moveTo(-18, 20); ctx.lineTo(-6, 9); ctx.lineTo(-8, 26); ctx.closePath(); ctx.fill();
     ctx.beginPath(); ctx.moveTo(18, 20); ctx.lineTo(6, 9); ctx.lineTo(8, 26); ctx.closePath(); ctx.fill();
 
     // main hull
     const bodyG = ctx.createLinearGradient(0, -34, 0, 30);
     bodyG.addColorStop(0, "#ffffff");
-    bodyG.addColorStop(0.28, skin.accent);
-    bodyG.addColorStop(0.58, skin.body);
-    bodyG.addColorStop(1, "#163b56");
+    bodyG.addColorStop(0.28, "#b9f0ff");
+    bodyG.addColorStop(0.58, "#67c6f7");
+    bodyG.addColorStop(1, "#1d6fa7");
     ctx.fillStyle = bodyG;
     ctx.beginPath();
     ctx.moveTo(0, -36);
@@ -551,7 +443,7 @@
     ctx.beginPath(); ctx.moveTo(8, 2); ctx.lineTo(2, 10); ctx.stroke();
 
     // nose
-    ctx.fillStyle = skin.accent;
+    ctx.fillStyle = "#f3fbff";
     ctx.beginPath(); ctx.moveTo(0, -40); ctx.lineTo(8, -18); ctx.lineTo(-8, -18); ctx.closePath(); ctx.fill();
 
     // cockpit
@@ -577,9 +469,9 @@
     ctx.beginPath(); ctx.moveTo(5, 33 + flick * 0.7); ctx.lineTo(8, 24); ctx.lineTo(2, 24); ctx.closePath(); ctx.fill();
 
     // tiny side lights
-    ctx.fillStyle = skin.accent;
+    ctx.fillStyle = "#ffd84a";
     ctx.beginPath(); ctx.arc(-15, 10, 2, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = skin.body;
+    ctx.fillStyle = "#ff5757";
     ctx.beginPath(); ctx.arc(15, 10, 2, 0, Math.PI * 2); ctx.fill();
 
     ctx.restore();
@@ -825,10 +717,6 @@
     shieldTimer = 0;
     magnetTimer = 0;
     reviveUsedThisRun = false;
-    boss = null;
-    bossCooldown = 32;
-    bossAttackTimer = 0;
-    bossPhaseTimer = 0;
     player.x = W * 0.5;
     player.moveX = 0;
     updateHUD();
@@ -844,156 +732,6 @@
     }
     const rows = JSON.parse(localStorage.getItem("xgp_v5_local_lb") || "[]");
     renderLeaderboard(rows);
-  }
-
-
-  function renderSkins() {
-    if (!skinGrid) return;
-    skinGrid.innerHTML = "";
-    SKINS.forEach(s => {
-      const card = document.createElement("div");
-      card.className = "skinCard";
-      card.innerHTML = `
-        <div class="skinTitle">${s.title}</div>
-        <div class="skinMeta">${s.note}</div>
-        <div class="skinPreview">
-          <div class="skinPreviewShip" style="border-bottom-color:${s.body}; filter:drop-shadow(0 0 10px ${s.accent}88)"></div>
-        </div>
-        <button style="width:100%" data-skin="${s.id}">${save.skin === s.id ? "EQUIPPED" : "EQUIP"}</button>
-      `;
-      card.querySelector("button").addEventListener("click", () => {
-        save.skin = s.id;
-        persistSave();
-        renderSkins();
-        showToast(`${s.title.toUpperCase()} EQUIPPED`);
-      });
-      skinGrid.appendChild(card);
-    });
-  }
-
-  function spawnBoss() {
-    if (boss) return;
-    boss = {
-      x: W * 0.5,
-      y: -90,
-      targetY: 120,
-      hp: 220,
-      phase: "enter",
-      attack: "meteorrain",
-      sway: Math.random() * Math.PI * 2,
-    };
-    bossAttackTimer = 2.8;
-    bossPhaseTimer = 18;
-    run.bossRewardClaimed = false;
-    showToast("BOSS INCOMING");
-  }
-
-  function drawBoss(now, dt) {
-    if (!boss) return;
-
-    if (boss.phase === "enter") {
-      boss.y += 90 * dt;
-      if (boss.y >= boss.targetY) boss.phase = "fight";
-    } else {
-      boss.sway += dt * 1.8;
-      boss.x = W * 0.5 + Math.sin(boss.sway) * 110;
-      bossPhaseTimer -= dt;
-      bossAttackTimer -= dt;
-
-      if (bossAttackTimer <= 0) {
-        bossAttackTimer = boss.attack === "laser" ? 3.2 : 2.2;
-        boss.attack = boss.attack === "laser" ? "meteorrain" : "laser";
-
-        if (boss.attack === "meteorrain") {
-          for (let i = 0; i < 7; i++) {
-            hazards.push({
-              type: "meteor",
-              x: rand(28, W - 28),
-              y: -rand(20, 180),
-              r: 16,
-              visualR: 22,
-              speed: rand(250, 330),
-              rot: rand(0, Math.PI * 2),
-              spin: rand(-3.5, 3.5),
-            });
-          }
-        }
-      }
-
-      if (bossPhaseTimer <= 0) {
-        if (!run.bossRewardClaimed) {
-          run.bossRewardClaimed = true;
-          run.rankPoint += 15;
-          save.starCurrency += 20;
-          persistSave();
-          updateHUD();
-          showToast("BOSS CLEARED +20 STAR");
-        }
-        emitParticles(boss.x, boss.y, "#b25dff", 40, 1.2);
-        boss = null;
-        return;
-      }
-    }
-
-    const g = ctx.createRadialGradient(boss.x - 12, boss.y - 18, 4, boss.x, boss.y, 72);
-    g.addColorStop(0, "#ffe8ff");
-    g.addColorStop(0.32, "#b25dff");
-    g.addColorStop(1, "#4c116a");
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.arc(boss.x, boss.y, 58, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.strokeStyle = "rgba(255,255,255,.55)";
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.ellipse(boss.x, boss.y, 74, 18, 0.18, 0, Math.PI * 2);
-    ctx.stroke();
-
-    ctx.fillStyle = "#ffffff";
-    ctx.beginPath(); ctx.arc(boss.x - 18, boss.y - 8, 7, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(boss.x + 18, boss.y - 8, 7, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = "#24072f";
-    ctx.beginPath(); ctx.arc(boss.x - 18, boss.y - 8, 3, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(boss.x + 18, boss.y - 8, 3, 0, Math.PI * 2); ctx.fill();
-
-    ctx.strokeStyle = "#ff9ed8";
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(boss.x, boss.y + 8, 18, 0.15, Math.PI - 0.15);
-    ctx.stroke();
-
-    ctx.fillStyle = "rgba(255,255,255,.92)";
-    ctx.fillRect(boss.x - 72, boss.y - 86, 144, 8);
-    ctx.fillStyle = "#ff5cd8";
-    ctx.fillRect(boss.x - 72, boss.y - 86, 144 * Math.max(0, bossPhaseTimer / 18), 8);
-
-    if (boss.attack === "laser" && boss.phase === "fight") {
-      const alpha = 0.18 + Math.abs(Math.sin(now * 0.02)) * 0.2;
-      ctx.fillStyle = `rgba(255,92,216,${alpha})`;
-      ctx.fillRect(boss.x - 16, boss.y + 40, 32, H);
-      if (player.x > boss.x - 24 && player.x < boss.x + 24 && player.y > boss.y + 34) {
-        if (shieldTimer > 0) {
-          shieldTimer = 0;
-          showToast("SHIELD BLOCK");
-        } else if (!tryRevive()) {
-          sfxDeath();
-          endRun();
-        }
-      }
-    }
-
-    const bossHit = Math.hypot(player.x - boss.x, player.y - boss.y) < (player.r + 58);
-    if (bossHit) {
-      if (shieldTimer > 0) {
-        shieldTimer = 0;
-        emitParticles(player.x, player.y, "#7dff9b", 20, 0.9);
-        showToast("SHIELD BLOCK");
-      } else if (!tryRevive()) {
-        sfxDeath();
-        endRun();
-      }
-    }
   }
 
   function renderLeaderboard(rows) {
@@ -1140,9 +878,9 @@
     pctx.fill();
 
     const wingGrad = pctx.createLinearGradient(-28, 0, 28, 0);
-    wingGrad.addColorStop(0, skin.body);
-    wingGrad.addColorStop(0.5, skin.accent);
-    wingGrad.addColorStop(1, skin.body);
+    wingGrad.addColorStop(0, "#2d90cd");
+    wingGrad.addColorStop(0.5, "#6dd5ff");
+    wingGrad.addColorStop(1, "#2d90cd");
     pctx.fillStyle = wingGrad;
     pctx.beginPath(); pctx.moveTo(-30, 14); pctx.lineTo(-6, -1); pctx.lineTo(-5, 16); pctx.closePath(); pctx.fill();
     pctx.beginPath(); pctx.moveTo(30, 14); pctx.lineTo(6, -1); pctx.lineTo(5, 16); pctx.closePath(); pctx.fill();
@@ -1153,9 +891,9 @@
 
     const bodyG = pctx.createLinearGradient(0, -32, 0, 28);
     bodyG.addColorStop(0, "#ffffff");
-    bodyG.addColorStop(0.28, skin.accent);
-    bodyG.addColorStop(0.58, skin.body);
-    bodyG.addColorStop(1, "#163b56");
+    bodyG.addColorStop(0.28, "#b9f0ff");
+    bodyG.addColorStop(0.58, "#67c6f7");
+    bodyG.addColorStop(1, "#1d6fa7");
     pctx.fillStyle = bodyG;
     pctx.beginPath();
     pctx.moveTo(0, -34); pctx.lineTo(15, -8); pctx.lineTo(13, 20);
@@ -1226,13 +964,7 @@
     const starInterval = 0.43;
     const powerupInterval = 6.5;
 
-    bossCooldown -= dt;
-    if (!boss && bossCooldown <= 0) {
-      bossCooldown = 40;
-      spawnBoss();
-    }
-
-    if (spawnHazardTimer >= hazardInterval) { spawnHazardTimer = 0; if (!boss) spawnHazard(); else if (Math.random() < 0.55) spawnHazard(); }
+    if (spawnHazardTimer >= hazardInterval) { spawnHazardTimer = 0; spawnHazard(); }
     if (spawnStarTimer >= starInterval) { spawnStarTimer = 0; spawnFallingStar(); }
     if (timeAlive > 2 && Math.floor((timeAlive - dt) / powerupInterval) !== Math.floor(timeAlive / powerupInterval)) spawnPowerup();
     if (rankSyncTimer >= 6) { rankSyncTimer = 0; loadLeaderboard(); }
@@ -1367,7 +1099,6 @@
     }
 
     drawParticles(dt);
-    drawBoss(now, dt);
     drawPlayer(now);
 
     if (shieldTimer > 0) {
@@ -1485,10 +1216,6 @@
 
   tabPlay.addEventListener("click", () => switchTab("play"));
   tabShop.addEventListener("click", () => switchTab("shop"));
-  if (tabSkins) tabSkins.addEventListener("click", () => {
-    switchTab("skins");
-    renderSkins();
-  });
   tabBoard.addEventListener("click", () => {
     switchTab("board");
     loadLeaderboard();
@@ -1497,7 +1224,6 @@
   updateHUD();
   syncBGMButton();
   renderShopPreviews();
-  renderSkins();
   loadLeaderboard();
   initFirebase();
   requestAnimationFrame(loop);
