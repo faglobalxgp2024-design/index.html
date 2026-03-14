@@ -1,62 +1,223 @@
-
 <!doctype html>
-<html>
+<html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>XGP SPACE RUN V10</title>
-<style>
-body{margin:0;background:#030611;color:#fff;font-family:Arial;overflow:hidden}
-canvas{display:block}
-.hud{position:absolute;top:6px;left:6px;display:flex;gap:8px;font-size:12px}
-.box{background:rgba(0,0,0,.55);padding:6px 10px;border-radius:6px}
-.menu{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
-button{padding:10px 18px;margin:6px;border-radius:6px;border:none;background:#2b9cff;color:#fff}
-#shop,#skins,#missions,#leader{display:none}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>XGP SPACE RUN V5 ONLINE</title>
+  <style>
+    :root{
+      --panel:rgba(8,14,28,.82);
+      --line:#7ad8ff;
+      --text:#f4fbff;
+      --muted:#9fc9de;
+      --yellow:#ffd84a;
+      --purple:#b25dff;
+      --danger:#ff6b5f;
+      --ok:#7dff9b;
+    }
+    *{box-sizing:border-box}
+    html,body{
+      margin:0;height:100%;overflow:hidden;color:var(--text);font-family:Arial,sans-serif;
+      background:
+        radial-gradient(circle at 50% 0%, #15316b 0%, #081123 34%, #040811 72%, #02040a 100%);
+    }
+    #app{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+    #gameWrap{position:relative;width:min(100vw,470px);height:100vh;max-height:920px}
+    canvas{
+      display:block;width:100%;height:100%;
+      background:
+        radial-gradient(circle at 50% 12%, rgba(125,216,255,.18), transparent 26%),
+        radial-gradient(circle at 15% 32%, rgba(255,160,90,.12), transparent 16%),
+        radial-gradient(circle at 85% 24%, rgba(178,93,255,.10), transparent 18%),
+        linear-gradient(180deg,#071022 0%,#040914 100%);
+      border-left:1px solid rgba(255,255,255,.05);
+      border-right:1px solid rgba(255,255,255,.05);
+    }
+    .hud{position:absolute;left:8px;right:8px;top:8px;display:grid;grid-template-columns:1fr 1fr;gap:6px;pointer-events:none}
+    .card{
+      background:var(--panel);border:1px solid rgba(122,216,255,.32);border-radius:12px;
+      padding:6px 8px;backdrop-filter:blur(6px);box-shadow:0 6px 20px rgba(0,0,0,.22)
+    }
+    .label{font-size:9px;color:var(--muted);letter-spacing:.2px}
+    .value{font-size:14px;font-weight:700;margin-top:3px}
+    .toolbar{position:absolute;left:8px;right:8px;bottom:10px;display:flex;gap:6px;align-items:end}
+    button{
+      pointer-events:auto;border:1px solid rgba(122,216,255,.45);
+      background:var(--panel);color:var(--text);padding:10px 12px;border-radius:12px;font-weight:700;cursor:pointer
+    }
+    button:active{transform:translateY(1px)}
+    #menuOverlay{
+      position:absolute;inset:0;background:rgba(0,0,0,.46);display:flex;align-items:center;justify-content:center;padding:16px;z-index:20
+    }
+    .menuPanel{
+      width:min(390px,96%);background:rgba(6,11,21,.95);border:1px solid rgba(122,216,255,.45);
+      border-radius:18px;padding:16px;box-shadow:0 18px 50px rgba(0,0,0,.38)
+    }
+    .menuPanel h1{margin:0 0 8px;font-size:24px}
+    .menuPanel p{margin:0 0 10px;color:var(--muted);font-size:14px;line-height:1.55}
+    .menuTabs{display:flex;gap:8px;margin:12px 0}
+    .menuTabs button{flex:1}
+    .menuSection{display:none}
+    .menuSection.active{display:block}
+    .shopItem,.boardFrame{
+      background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      border:1px solid rgba(255,255,255,.10);border-radius:16px;padding:12px;margin-top:10px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 10px 24px rgba(0,0,0,.18);
+    }
+    .previewSliderWrap{margin-top:12px}
+    .previewSliderTitle{font-size:12px;color:var(--muted);margin-bottom:8px}
+    .previewSlider{
+      display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;scroll-snap-type:x mandatory;
+      -webkit-overflow-scrolling:touch
+    }
+    .previewSlider::-webkit-scrollbar{height:8px}
+    .previewSlider::-webkit-scrollbar-thumb{background:rgba(122,216,255,.25);border-radius:999px}
+    .previewSlide{
+      flex:0 0 180px;scroll-snap-align:start;
+      background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);
+      border-radius:14px;padding:10px
+    }
+    .previewLabel{font-size:12px;color:var(--muted);margin-bottom:6px;min-height:28px}
+    .previewCanvas{width:100%;height:100px;border-radius:12px;background:
+      radial-gradient(circle at 50% 20%, rgba(125,216,255,.16), transparent 24%),
+      linear-gradient(180deg,#071022 0%,#040914 100%);
+      border:1px solid rgba(122,216,255,.18)}
+    .shopItemTitle{font-weight:700;margin-bottom:6px}
+    .tiny{font-size:12px;color:var(--muted)}
+    .row{display:flex;gap:8px;align-items:center;justify-content:space-between}
+    #lbBox h3{margin:0 0 6px;font-size:18px;letter-spacing:.4px}
+    #lbList{margin:10px 0 0;padding:0;list-style:none}
+    #lbList li{
+      display:flex;align-items:center;justify-content:space-between;
+      gap:10px;font-size:13px;line-height:1.45;margin-bottom:6px;
+      padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.03);
+      border:1px solid rgba(255,255,255,.06)
+    }
+    .rankBadge{display:inline-flex;align-items:center;gap:8px;min-width:0}
+    .rankNum{color:var(--muted);width:22px}
+    .crown{font-size:16px}
+    .nameText{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px}
+    .scoreText{font-weight:700;color:var(--yellow)}
+    #toast{
+      position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+      background:rgba(0,0,0,.72);border:1px solid rgba(255,255,255,.14);
+      border-radius:12px;padding:12px 14px;font-weight:700;opacity:0;pointer-events:none;transition:opacity .18s ease;z-index:30
+    }
+    #toast.show{opacity:1}
+    #joyWrap{display:none !important}
+    #joyStick{display:none !important}
+    @media (max-width:700px){
+      .hud{top:6px;left:6px;right:6px;gap:5px}
+      .card{padding:5px 7px}
+      .label{font-size:8px}
+      .value{font-size:12px}
+      .toolbar{left:6px;right:6px;gap:5px;bottom:8px}
+      button{padding:8px 9px;font-size:12px}
+      .menuPanel{width:min(360px,95%);padding:14px}
+      .menuPanel h1{font-size:22px}
+      .menuPanel p{font-size:13px}
+    }
+  </style>
 </head>
 <body>
+<div id="app">
+  <div id="gameWrap">
+    <canvas id="game" width="470" height="920"></canvas>
 
-<canvas id="game"></canvas>
+    <div class="hud">
+      <div class="card"><div class="label">STAR CURRENCY</div><div class="value" id="starVal">0</div></div>
+      <div class="card"><div class="label">RANK POINT</div><div class="value" id="rankVal">0</div></div>
+      <div class="card"><div class="label">LEVEL</div><div class="value" id="levelVal">1</div></div>
+      <div class="card"><div class="label">RANK BONUS</div><div class="value" id="bonusVal">0.5%</div></div>
+    </div>
 
-<div class="hud">
-<div class="box">STAR <span id="star">0</span></div>
-<div class="box">RANK <span id="rank">0</span></div>
-<div class="box">LEVEL <span id="level">1</span></div>
-<div class="box">COMBO <span id="combo">1x</span></div>
-</div>
+    <div id="toast"></div>
 
-<div class="menu" id="menu">
-<h1>XGP SPACE RUN</h1>
-<button onclick="startGame()">START</button>
-<button onclick="openShop()">SHOP</button>
-<button onclick="openSkins()">SKINS</button>
-<button onclick="openMissions()">MISSIONS</button>
-<button onclick="openLeader()">LEADERBOARD</button>
-</div>
+    <div class="toolbar">
+      <button id="menuBtn">MENU</button>
+      <button id="resetBtn">RESET RUN</button>
+      <button id="nameBtn">NAME</button>
+      <button id="bgmBtn">BGM ON</button>
+    </div>
 
-<div class="menu" id="shop">
-<h2>UPGRADE</h2>
-<button onclick="upgrade()">UPGRADE (100 STAR)</button>
-<br><button onclick="closeMenus()">BACK</button>
-</div>
+    <div id="joyWrap"><div id="joyStick"></div></div>
 
-<div class="menu" id="skins">
-<h2>SHIP SKINS</h2>
-<div id="skinList"></div>
-<button onclick="closeMenus()">BACK</button>
-</div>
+    <div id="menuOverlay">
+      <div class="menuPanel">
+        <h1>XGP SPACE RUN</h1>
+        <p>
+          Yellow star = RANK point for this run.<br>
+          Purple star = STAR currency that stays saved.<br>
+          Only the highest RANK score is kept on the leaderboard.
+        </p>
 
-<div class="menu" id="missions">
-<h2>DAILY MISSIONS</h2>
-<div id="missionList"></div>
-<button onclick="closeMenus()">BACK</button>
-</div>
+        <div class="menuTabs">
+          <button id="tabPlay">PLAY</button>
+          <button id="tabShop">SHOP</button>
+          <button id="tabBoard">RANK BOARD</button>
+        </div>
 
-<div class="menu" id="leader">
-<h2>TOP 20</h2>
-<div id="leaderList"></div>
-<button onclick="closeMenus()">BACK</button>
+        <div id="playSection" class="menuSection active">
+          <div class="boardFrame">
+            <div class="row"><b>PLAYER</b><span id="playerNameText">PLAYER</span></div>
+            <div class="row" style="margin-top:8px"><b>SAVED STAR</b><span id="menuStarText">0</span></div>
+            <div class="row" style="margin-top:8px"><b>BEST RANK</b><span id="bestRankText">0</span></div>
+            <div class="row" style="margin-top:8px"><b>LEVEL</b><span id="menuLevelText">1</span></div>
+            <div class="tiny" style="margin-top:10px;line-height:1.55">
+              V8 adds black holes, shield/magnet items, revive using 50 STAR, and sound effects.
+            </div>
+          </div>
+          <button id="startBtn" style="width:100%;margin-top:12px">START GAME</button>
+        </div>
+
+        <div id="shopSection" class="menuSection">
+          <div class="shopItem">
+            <div class="shopItemTitle">RANK BOOST UPGRADE · V8</div>
+            <div class="tiny">Each level increases yellow-star rank gain by +0.5% from the base value. This is not compound. V8 also adds random SHIELD / MAGNET items and a 50 STAR revive.</div>
+            <div class="row" style="margin-top:10px"><span>COST</span><b id="upgradeCostText">50 STAR</b></div>
+            <div class="row" style="margin-top:8px"><span>CURRENT LEVEL</span><b id="shopLevelText">1</b></div>
+            <div class="row" style="margin-top:8px"><span>CURRENT BONUS</span><b id="shopBonusText">0.5%</b></div>
+            <button id="upgradeBtn" style="width:100%;margin-top:12px">BUY UPGRADE</button>
+
+            <div class="previewSliderWrap">
+              <div class="previewSliderTitle">EFFECT PREVIEW · LEVEL 10 / 20 / 30 / 40 / 50</div>
+              <div class="previewSlider" id="previewSlider">
+                <div class="previewSlide">
+                  <div class="previewLabel">LEVEL 10 · GOLD AURA</div>
+                  <canvas id="previewLv10" class="previewCanvas" width="150" height="100"></canvas>
+                </div>
+                <div class="previewSlide">
+                  <div class="previewLabel">LEVEL 20 · RED AURA</div>
+                  <canvas id="previewLv20" class="previewCanvas" width="150" height="100"></canvas>
+                </div>
+                <div class="previewSlide">
+                  <div class="previewLabel">LEVEL 30 · PURPLE AURA</div>
+                  <canvas id="previewLv30" class="previewCanvas" width="150" height="100"></canvas>
+                </div>
+                <div class="previewSlide">
+                  <div class="previewLabel">LEVEL 40 · GREEN AURA</div>
+                  <canvas id="previewLv40" class="previewCanvas" width="150" height="100"></canvas>
+                </div>
+                <div class="previewSlide">
+                  <div class="previewLabel">LEVEL 50 · RAINBOW AURA</div>
+                  <canvas id="previewLv50" class="previewCanvas" width="150" height="100"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="boardSection" class="menuSection">
+          <div id="lbBox" class="boardFrame">
+            <h3>ONLINE RANK BOARD · TOP20</h3>
+            <div class="tiny" id="lbMode">Checking online mode...</div>
+            <ol id="lbList"></ol>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
 </div>
 
 <script src="firebase-config.js"></script>
