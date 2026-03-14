@@ -1,0 +1,18 @@
+// XGP ONLINE CONFIG
+// 1) Create a Firebase project
+// 2) Enable Firestore Database
+// 3) Paste your Firebase web app config below
+// 4) Change enabled to true
+// 5) Deploy these files to the same URL
+
+window.XGP_ONLINE_CONFIG = {
+  enabled: false,
+  firebaseConfig: {
+    apiKey: "",
+    authDomain: "",
+    projectId: "",
+    storageBucket: "",
+    messagingSenderId: "",
+    appId: ""
+  }
+};
