@@ -43,6 +43,10 @@
   const previewLv40 = document.getElementById("previewLv40");
   const previewLv50 = document.getElementById("previewLv50");
 
+  const nicknameModal = document.getElementById("nicknameModal");
+  const nicknameInput = document.getElementById("nicknameInput");
+  const nicknameSaveBtn = document.getElementById("nicknameSaveBtn");
+
   const W = canvas.width;
   const H = canvas.height;
 
@@ -53,21 +57,31 @@
   let spawnStarTimer = 0;
   let rankSyncTimer = 0;
 
-  function askNickname(initialValue = "") {
-    let next = "";
-    while (!next) {
-      const input = prompt("Enter your nickname", initialValue);
-      if (input === null) continue;
-      next = String(input).trim();
-    }
-    return next;
+  function openNicknameModal(initialValue = "") {
+    return new Promise((resolve) => {
+      nicknameModal.style.display = "flex";
+      nicknameInput.value = initialValue || "";
+      setTimeout(() => nicknameInput.focus(), 0);
+
+      const submit = () => {
+        const value = String(nicknameInput.value || "").trim();
+        if (!value) return;
+        nicknameModal.style.display = "none";
+        nicknameSaveBtn.removeEventListener("click", submit);
+        nicknameInput.removeEventListener("keydown", onKey);
+        resolve(value);
+      };
+
+      const onKey = (e) => {
+        if (e.key === "Enter") submit();
+      };
+
+      nicknameSaveBtn.addEventListener("click", submit);
+      nicknameInput.addEventListener("keydown", onKey);
+    });
   }
 
   let playerName = localStorage.getItem("xgp_v5_name") || "";
-  if (!playerName) {
-    playerName = askNickname("");
-    localStorage.setItem("xgp_v5_name", playerName);
-  }
 
   const onlineConfig = window.XGP_ONLINE_CONFIG || { enabled: false, firebaseConfig: null };
   let useFirebase = false;
@@ -1263,9 +1277,9 @@
     syncBGMButton();
   });
 
-  nameBtn.addEventListener("click", () => {
+  nameBtn.addEventListener("click", async () => {
     ensureAudio();
-    playerName = askNickname(playerName);
+    playerName = await openNicknameModal(playerName);
     localStorage.setItem("xgp_v5_name", playerName);
     updateHUD();
     showToast("NAME SAVED");
@@ -1278,10 +1292,16 @@
     loadLeaderboard();
   });
 
-  updateHUD();
-  syncBGMButton();
-  renderShopPreviews();
-  loadLeaderboard();
-  initFirebase();
-  requestAnimationFrame(loop);
+  (async () => {
+    if (!playerName) {
+      playerName = await openNicknameModal("");
+      localStorage.setItem("xgp_v5_name", playerName);
+    }
+    updateHUD();
+    syncBGMButton();
+    renderShopPreviews();
+    loadLeaderboard();
+    initFirebase();
+    requestAnimationFrame(loop);
+  })();
 })();
