@@ -51,6 +51,8 @@
   const W = canvas.width;
   const H = canvas.height;
 
+  document.body.style.touchAction = "none";
+
   let running = false;
   let last = 0;
   let timeAlive = 0;
