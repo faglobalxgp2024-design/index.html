@@ -31,6 +31,7 @@
   const menuLevelText = document.getElementById("menuLevelText");
 
   const shopLevelText = document.getElementById("shopLevelText");
+  const shopStarText = document.getElementById("shopStarText");
   const shopBonusText = document.getElementById("shopBonusText");
   const upgradeCostText = document.getElementById("upgradeCostText");
 
@@ -297,6 +298,7 @@
     bestRankText.textContent = Math.floor(save.bestRank).toString();
     menuLevelText.textContent = save.level.toString();
     shopLevelText.textContent = save.level.toString();
+    shopStarText.textContent = Math.floor(save.starCurrency).toString();
     shopBonusText.textContent = getRankBonusPercent().toFixed(1) + "%";
     upgradeCostText.textContent = `${getUpgradeCost()} STAR`;
   }
