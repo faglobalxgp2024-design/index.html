@@ -47,6 +47,9 @@
   const nicknameModal = document.getElementById("nicknameModal");
   const nicknameInput = document.getElementById("nicknameInput");
   const nicknameSaveBtn = document.getElementById("nicknameSaveBtn");
+  const reviveModal = document.getElementById("reviveModal");
+  const reviveCancelBtn = document.getElementById("reviveCancelBtn");
+  const reviveConfirmBtn = document.getElementById("reviveConfirmBtn");
 
   const W = canvas.width;
   const H = canvas.height;
@@ -59,6 +62,44 @@
   let spawnHazardTimer = 0;
   let spawnStarTimer = 0;
   let rankSyncTimer = 0;
+  let runSessionActive = false;
+  let revivePromptOpen = false;
+  let deathPending = false;
+
+
+  function updateStartButton() {
+    if (!startBtn) return;
+    const canResume = runSessionActive && !running;
+    startBtn.textContent = canResume ? "CONTINUE GAME" : "START GAME";
+    startBtn.classList.toggle("is-resume", canResume);
+    startBtn.classList.toggle("is-start", !canResume);
+  }
+
+  function openReviveModal() {
+    return new Promise((resolve) => {
+      reviveModal.style.display = "flex";
+
+      const close = (accepted) => {
+        reviveModal.style.display = "none";
+        reviveCancelBtn.removeEventListener("click", onCancel);
+        reviveConfirmBtn.removeEventListener("click", onConfirm);
+        window.removeEventListener("keydown", onKey);
+        resolve(accepted);
+      };
+
+      const onCancel = () => close(false);
+      const onConfirm = () => close(true);
+      const onKey = (e) => {
+        if (e.key === "Escape") close(false);
+        if (e.key === "Enter") close(true);
+      };
+
+      reviveCancelBtn.addEventListener("click", onCancel);
+      reviveConfirmBtn.addEventListener("click", onConfirm);
+      window.addEventListener("keydown", onKey);
+      setTimeout(() => reviveConfirmBtn.focus(), 0);
+    });
+  }
 
   function openNicknameModal(initialValue = "") {
     return new Promise((resolve) => {
@@ -869,12 +910,12 @@
     showToast(`LEVEL UP ${save.level}`);
   }
 
-  function tryRevive() {
-    if (reviveUsedThisRun) return false;
-    if (save.starCurrency < 50) return false;
-    const ok = window.confirm("Revive for 50 STAR?");
-    if (!ok) return false;
 
+  function canRevive() {
+    return !reviveUsedThisRun && save.starCurrency >= 50;
+  }
+
+  function performRevive() {
     save.starCurrency -= 50;
     persistSave();
     reviveUsedThisRun = true;
@@ -887,11 +928,48 @@
     sfxRevive();
     updateHUD();
     showToast("REVIVED -50 STAR");
-    return true;
+  }
+
+  async function requestRevive() {
+    if (revivePromptOpen) return;
+    if (!canRevive()) {
+      deathPending = false;
+      endRun();
+      return;
+    }
+
+    revivePromptOpen = true;
+    deathPending = true;
+    running = false;
+    stopBGM();
+
+    const accepted = await openReviveModal();
+
+    revivePromptOpen = false;
+
+    if (!accepted) {
+      deathPending = false;
+      endRun();
+      return;
+    }
+
+    if (!canRevive()) {
+      deathPending = false;
+      endRun();
+      return;
+    }
+
+    performRevive();
+    deathPending = false;
+    runSessionActive = true;
+    running = true;
+    last = 0;
+    startBGM();
+    updateStartButton();
   }
 
   function endRun() {
-    if (!running) return;
+    if (!running && !runSessionActive && !deathPending) return;
     running = false;
 
     if (run.rankPoint > save.bestRank) {
@@ -907,6 +985,9 @@
     updateHUD();
     switchTab("play");
     stopBGM();
+    runSessionActive = false;
+    deathPending = false;
+    updateStartButton();
     menuOverlay.style.display = "flex";
   }
 
@@ -1078,7 +1159,10 @@
         explodeHazard(h);
         hazards.splice(i, 1);
         sfxDeath();
-        if (tryRevive()) continue;
+        if (canRevive()) {
+          requestRevive();
+          return;
+        }
         endRun();
         return;
       }
@@ -1248,30 +1332,47 @@
 
   function startRun() {
     ensureAudio();
+
+    if (runSessionActive && !running) {
+      menuOverlay.style.display = "none";
+      running = true;
+      last = 0;
+      startBGM();
+      updateStartButton();
+      showToast("CONTINUE");
+      return;
+    }
+
     resetRun();
+    runSessionActive = true;
     updateHUD();
     menuOverlay.style.display = "none";
     running = true;
     last = 0;
     startBGM();
+    updateStartButton();
     showToast("START");
   }
 
   startBtn.addEventListener("click", startRun);
   upgradeBtn.addEventListener("click", () => { ensureAudio(); buyUpgrade(); });
   menuBtn.addEventListener("click", () => {
+    if (!runSessionActive) return;
     running = false;
     stopBGM();
     switchTab("play");
     updateHUD();
+    updateStartButton();
     menuOverlay.style.display = "flex";
   });
   resetBtn.addEventListener("click", () => {
     resetRun();
+    runSessionActive = true;
     running = true;
     menuOverlay.style.display = "none";
     last = 0;
     startBGM();
+    updateStartButton();
     showToast("RESET RUN");
   });
   if (bgmBtn) bgmBtn.addEventListener("click", () => {
@@ -1297,12 +1398,14 @@
   });
 
   (async () => {
+    if (menuBtn) menuBtn.textContent = "PAUSE";
     if (!playerName) {
       playerName = await openNicknameModal("");
       localStorage.setItem("xgp_v5_name", playerName);
     }
     updateHUD();
     syncBGMButton();
+    updateStartButton();
     renderShopPreviews();
     loadLeaderboard();
     initFirebase();
