@@ -1416,11 +1416,11 @@
       const snap = await getDoc(doc(db.store, "xgp", "leaderboard_weekly"));
       const data = snap.exists() ? (snap.data() || {}) : {};
       const rows = data.seasonKey === season.key ? (data.rows || []) : [];
-      renderLeaderboard(rows, wlbList, 20);
+      renderLeaderboard(rows, wlbList, 7);
       return;
     }
     const payload = getLocalWeeklyLeaderboardPayload();
-    renderLeaderboard(payload.rows || [], wlbList, 20);
+    renderLeaderboard(payload.rows || [], wlbList, 7);
   }
 
   async function saveLeaderboard(score = 0) {
