@@ -79,7 +79,7 @@
     prevSection.className = weeklyBoardSection.className;
     prevSection.innerHTML = `
       <div class="menuCard">
-        <h3>PREVIOUS WEEK RANKING</h3>
+        <h3>PREVIOUS WEEK TOP 7</h3>
         <p id="prevWeeklyText" class="subText">Previous week ranking snapshot will appear after the next weekly reset.</p>
         <div id="pwlbMode" class="modeText">Weekly snapshot</div>
         <ol id="pwlbList" class="leaderboardList"></ol>
